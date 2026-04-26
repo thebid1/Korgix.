@@ -3,7 +3,7 @@ import { useTaskStore } from '../stores/taskStore';
 import { TaskCard } from './TaskCard';
 import { EmptyState } from './EmptyState';
 import { FilterTabs } from './FilterTabs';
-import { getTodayString, isTaskActive, isTaskOverdue } from '../utils/time';
+import { getTodayString } from '../utils/time';
 import { Plus } from 'lucide-react';
 
 type Filter = 'today' | 'upcoming' | 'done' | 'all';
@@ -29,10 +29,7 @@ export const TaskListView = ({ onAdd }: TaskListViewProps) => {
     const now = new Date();
     switch (filter) {
       case 'today':
-        return todayTasks.filter(t => {
-          const taskDate = t.date;
-          return taskDate === getTodayString();
-        });
+        return todayTasks.filter(t => t.date === getTodayString());
       case 'upcoming':
         return todayTasks.filter(t => t.status === 'pending' && new Date(t.startTime) > now);
       case 'done':
@@ -65,14 +62,15 @@ export const TaskListView = ({ onAdd }: TaskListViewProps) => {
   }
 
   return (
-    <div className="min-h-screen pb-28 px-5 pt-6">
+    <div className="min-h-screen pb-32 px-5" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+      
       {/* Header */}
-      <header className="mb-6">
+      <header className="mb-6 pt-4">
         <p className="text-[11px] font-bold tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
           {dayName}, {dateStr}
         </p>
         <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-          FocusFlow
+          Korgix
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
           {totalToday === 0 
@@ -105,12 +103,13 @@ export const TaskListView = ({ onAdd }: TaskListViewProps) => {
         </div>
       )}
 
-      {/* FAB */}
+      {/* FAB - positioned with safe area for iPhone notch */}
       <button
         onClick={onAdd}
-        className="fixed bottom-6 right-5 w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 z-40"
+        className="fixed right-5 w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 z-40 no-select"
         style={{ 
           background: 'var(--accent)',
+          bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 1rem))',
           boxShadow: '0 4px 20px rgba(48, 209, 88, 0.35)',
         }}
       >

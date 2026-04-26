@@ -73,7 +73,7 @@ export const useTaskStore = create<TaskState>()(
       setSelectedDate: (date) => set({ selectedDate: date }),
     }),
     {
-      name: 'focusflow-ui',
+      name: 'korgix-ui',
       partialize: (state) => ({ selectedDate: state.selectedDate }),
     }
   )

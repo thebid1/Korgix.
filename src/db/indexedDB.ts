@@ -1,7 +1,7 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { Task } from '../types';
 
-interface FocusFlowDB extends DBSchema {
+interface KorgixDB extends DBSchema {
   tasks: {
     key: string;
     value: Task;
@@ -9,11 +9,11 @@ interface FocusFlowDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'FocusFlowDB';
+const DB_NAME = 'KorgixDB';
 const DB_VERSION = 1;
 
-export const initDB = async (): Promise<IDBPDatabase<FocusFlowDB>> => {
-  return openDB<FocusFlowDB>(DB_NAME, DB_VERSION, {
+export const initDB = async (): Promise<IDBPDatabase<KorgixDB>> => {
+  return openDB<KorgixDB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains('tasks')) {
         const store = db.createObjectStore('tasks', { keyPath: 'id' });
@@ -23,7 +23,7 @@ export const initDB = async (): Promise<IDBPDatabase<FocusFlowDB>> => {
   });
 };
 
-let dbPromise: Promise<IDBPDatabase<FocusFlowDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<KorgixDB>> | null = null;
 
 const getDB = () => {
   if (!dbPromise) dbPromise = initDB();

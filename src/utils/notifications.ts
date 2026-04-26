@@ -8,11 +8,48 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 
 export const showNotification = (title: string, options?: NotificationOptions) => {
   if (Notification.permission === 'granted') {
-    new Notification(title, {
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-192x192.png',
-      ...options,
-    });
+    // Try service worker notification first (works in background)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification(title, {
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          ...options,
+        });
+      }).catch(() => {
+        // Fallback to regular notification
+        new Notification(title, {
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          ...options,
+        });
+      });
+    } else {
+      new Notification(title, {
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        ...options,
+      });
+    }
+  }
+};
+
+// Register for push notifications (for background delivery)
+export const registerPushNotifications = async (): Promise<boolean> => {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    
+    if (!subscription) {
+      console.log('Push subscription not available without VAPID keys');
+    }
+    
+    return !!subscription;
+  } catch (e) {
+    console.error('Push registration failed:', e);
+    return false;
   }
 };
 

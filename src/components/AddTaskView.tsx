@@ -36,12 +36,33 @@ export const AddTaskView = ({ onClose }: AddTaskViewProps) => {
     onClose();
   };
 
+  // FIXED: Quick-add now properly adds duration to the SELECTED start time
+  // If no start time is set, defaults to 1 minute from now
   const quickAdd = (minutes: number) => {
-    const now = new Date();
-    const start = new Date(now.getTime() + 60000);
-    const end = new Date(start.getTime() + minutes * 60000);
-    setStartTime(start.toISOString().slice(0, 16));
-    setEndTime(end.toISOString().slice(0, 16));
+    let baseStart: Date;
+    
+    if (startTime) {
+      // Use the already-selected start time
+      baseStart = new Date(startTime);
+    } else {
+      // Default: 1 minute from now
+      baseStart = new Date();
+      baseStart.setMinutes(baseStart.getMinutes() + 1);
+      baseStart.setSeconds(0, 0);
+    }
+    
+    const end = new Date(baseStart.getTime() + minutes * 60000);
+    
+    // Format for datetime-local input: YYYY-MM-DDTHH:mm
+    const formatForInput = (d: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    
+    if (!startTime) {
+      setStartTime(formatForInput(baseStart));
+    }
+    setEndTime(formatForInput(end));
   };
 
   const duration = startTime && endTime 
@@ -54,7 +75,7 @@ export const AddTaskView = ({ onClose }: AddTaskViewProps) => {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-4">
+      <div className="flex items-center justify-between px-5 pt-12 pb-4">
         <button 
           onClick={onClose}
           className="w-10 h-10 rounded-full flex items-center justify-center transition-colors active:scale-90"
