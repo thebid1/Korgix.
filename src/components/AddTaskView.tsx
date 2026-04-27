@@ -36,8 +36,6 @@ export const AddTaskView = ({ onClose }: AddTaskViewProps) => {
     onClose();
   };
 
-  // FIXED: Quick-add now properly adds duration to the SELECTED start time
-  // If no start time is set, defaults to 1 minute from now
   const quickAdd = (minutes: number) => {
     let baseStart: Date;
     

@@ -12,22 +12,22 @@ export const showNotification = (title: string, options?: NotificationOptions) =
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification(title, {
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
+          icon: '/icons/Korgix.png',
+          badge: '/icons/Korgix.png',
           ...options,
         });
       }).catch(() => {
         // Fallback to regular notification
         new Notification(title, {
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
+          icon: '/icons/Korgix.png',
+          badge: '/icons/Korgix.png',
           ...options,
         });
       });
     } else {
       new Notification(title, {
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
+        icon: '/icons/Korgix.png',
+        badge: '/icons/Korgix.png',
         ...options,
       });
     }
