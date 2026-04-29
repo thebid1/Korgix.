@@ -3,8 +3,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'Korgix', {
       body: data.body || 'Time to focus!',
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      icon: '/icons/Korgix.png',
+      badge: '/icons/Korgix.png',
       tag: data.tag || 'Korgix-default',
       requireInteraction: true,
       data: data,

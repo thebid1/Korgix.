@@ -3,7 +3,7 @@ export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'missed';
 export interface Task {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   startTime: string;
   endTime: string;
   date: string;

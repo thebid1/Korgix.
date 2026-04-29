@@ -42,7 +42,7 @@ export const TaskCard = ({ task, index }: TaskCardProps) => {
 
   return (
     <div 
-      className="rounded-2xl p-4 mb-3 flex items-center gap-3 animate-slide-up"
+      className="rounded-2xl p-4 mb-3 flex items-center gap-3 animate-slide-up transition-all hover:opacity-80"
       style={{ 
         background: 'var(--surface)',
         animationDelay: `${index * 50}ms`,
@@ -57,7 +57,10 @@ export const TaskCard = ({ task, index }: TaskCardProps) => {
 
       {/* Checkbox */}
       <button
-        onClick={() => !isDone && markComplete(task.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          !isDone && markComplete(task.id);
+        }}
         className="w-7 h-7 rounded-full border-2 shrink-0 flex items-center justify-center transition-all active:scale-90"
         style={{ 
           borderColor: isDone ? 'var(--accent)' : 'var(--border-light)',

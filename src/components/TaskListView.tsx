@@ -1,29 +1,38 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTaskStore } from '../stores/taskStore';
+import { useTaskScheduler } from '../hooks/useTaskScheduler';
 import { TaskCard } from './TaskCard';
+import { TaskDetail } from './TaskDetail';
 import { EmptyState } from './EmptyState';
 import { FilterTabs } from './FilterTabs';
 import { getTodayString } from '../utils/time';
 import { Plus } from 'lucide-react';
+import type { Task } from '../types';
 
 type Filter = 'today' | 'upcoming' | 'done' | 'all';
 
 interface TaskListViewProps {
   onAdd: () => void;
+  user: any;
 }
 
-export const TaskListView = ({ onAdd }: TaskListViewProps) => {
-  const { todayTasks, loadToday, selectedDate, setSelectedDate } = useTaskStore();
+export const TaskListView = ({ onAdd, user }: TaskListViewProps) => {
+  const { todayTasks, subscribeToTasks, selectedDate, setSelectedDate, isLoading } = useTaskStore();
   const [filter, setFilter] = useState<Filter>('today');
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
+  // Initialize task scheduler for automatic status transitions
+  useTaskScheduler();
 
   useEffect(() => {
     setSelectedDate(getTodayString());
-  }, []);
-
-  useEffect(() => {
-    loadToday().then(() => setIsLoading(false));
-  }, [selectedDate]);
+    subscribeToTasks();
+    
+    return () => {
+      const unsub = useTaskStore.getState().unsubscribe;
+      if (unsub) unsub();
+    };
+  }, [selectedDate, user?.uid]);
 
   const filteredTasks = useMemo(() => {
     const now = new Date();
@@ -63,47 +72,46 @@ export const TaskListView = ({ onAdd }: TaskListViewProps) => {
 
   return (
     <div className="min-h-screen pb-32 px-5" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
-      
-      {/* Header */}
       <header className="mb-6 pt-4">
         <p className="text-[11px] font-bold tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
           {dayName}, {dateStr}
         </p>
-        <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
-          Korgix
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Korgix</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-          {totalToday === 0 
-            ? 'No tasks today — give your day a shape.' 
-            : `${completedToday} of ${totalToday} done today`
-          }
+          {totalToday === 0 ? 'No tasks today — give your day a shape.' : `${completedToday} of ${totalToday} done today`}
         </p>
       </header>
 
-      {/* Filter Tabs */}
       <div className="mb-6">
         <FilterTabs active={filter} onChange={setFilter} counts={counts} />
       </div>
 
-      {/* Section Label */}
       {filteredTasks.length > 0 && (
         <p className="text-[11px] font-bold tracking-widest uppercase mb-3" style={{ color: 'var(--text-muted)' }}>
           {filter === 'today' ? 'Today' : filter === 'upcoming' ? 'Upcoming' : filter === 'done' ? 'Completed' : 'All Tasks'}
         </p>
       )}
 
-      {/* Task List */}
       {filteredTasks.length === 0 ? (
         <EmptyState onAdd={onAdd} />
       ) : (
         <div>
           {filteredTasks.map((task, i) => (
-            <TaskCard key={task.id} task={task} index={i} />
+            <div
+              key={task.id}
+              onClick={() => setSelectedTask(task)}
+              className="cursor-pointer"
+            >
+              <TaskCard task={task} index={i} />
+            </div>
           ))}
         </div>
       )}
 
-      {/* FAB - positioned with safe area for iPhone notch */}
+      {selectedTask && (
+        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+      )}
+
       <button
         onClick={onAdd}
         className="fixed right-5 w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 z-40 no-select"

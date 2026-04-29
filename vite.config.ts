@@ -41,5 +41,9 @@ export default defineConfig({
         ]
       }
     })
-  ]
+  ],
+
+  server: {
+    allowedHosts: ['.outray.app']
+  }
 })

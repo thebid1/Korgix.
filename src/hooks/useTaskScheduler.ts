@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import { scheduleTaskNotifications, showNotification, cancelAllNotifications } from '../utils/notifications';
 import { isPast, isFuture } from 'date-fns';
@@ -6,86 +6,68 @@ import { isPast, isFuture } from 'date-fns';
 const SCHEDULE_INTERVAL = 30000;
 
 export const useTaskScheduler = () => {
-  const { todayTasks, updateTask } = useTaskStore();
+  const todayTasks = useTaskStore((s) => s.todayTasks);
+  const updateTask = useTaskStore((s) => s.updateTask);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
-  const lastCheckRef = useRef<number>(Date.now());
+  const tasksRef = useRef(todayTasks);
+  const updateRef = useRef(updateTask);
 
-  useEffect(() => {
-    const checkTasks = () => {
-      const now = new Date();
-      const lastCheck = new Date(lastCheckRef.current);
+  // Keep refs in sync without triggering re-renders
+  tasksRef.current = todayTasks;
+  updateRef.current = updateTask;
 
-      todayTasks.forEach((task) => {
-        const start = new Date(task.startTime);
-        const end = new Date(task.endTime);
+  const checkTasks = useCallback(() => {
+    const tasks = tasksRef.current;
+    const update = updateRef.current;
 
-        // CATCH-UP: If app was closed and reopened, check if we missed notifications
-        if (task.status === 'pending' && isPast(start)) {
-          // Task should have started while app was closed
-          if (isFuture(end)) {
-            updateTask(task.id, { status: 'in-progress' });
-            if (!task.notifiedStart) {
-              showNotification(`🔔 Starting: ${task.title}`, {
-                body: 'Your focus block is live!',
-                tag: `start-${task.id}`,
-              });
-              updateTask(task.id, { notifiedStart: true });
-            }
-          } else {
-            // Task already ended while closed
-            updateTask(task.id, { status: 'missed' });
-            if (!task.notifiedEnd) {
-              showNotification(`⏰ Missed: ${task.title}`, {
-                body: 'This task ended while you were away.',
-                tag: `end-${task.id}`,
-              });
-              updateTask(task.id, { notifiedEnd: true });
-            }
-          }
-          return;
-        }
+    tasks.forEach((task) => {
+      const start = new Date(task.startTime);
+      const end = new Date(task.endTime);
 
-        // Normal real-time transitions
-        if (task.status === 'pending' && isPast(start) && isFuture(end)) {
-          updateTask(task.id, { status: 'in-progress' });
+      // CATCH-UP: App was closed and reopened
+      if (task.status === 'pending' && isPast(start)) {
+        if (isFuture(end)) {
+          update(task.id, { status: 'in-progress' });
           if (!task.notifiedStart) {
-            showNotification(`🔔 Starting: ${task.title}`, {
-              body: 'Time to work on your task!',
-              tag: `start-${task.id}`,
-            });
-            updateTask(task.id, { notifiedStart: true });
+            showNotification(`🔔 Starting: ${task.title}`, { body: 'Your focus block is live!', tag: `start-${task.id}` });
+            update(task.id, { notifiedStart: true });
           }
-        }
-
-        if ((task.status === 'pending' || task.status === 'in-progress') && isPast(end)) {
-          updateTask(task.id, { status: 'missed' });
+        } else {
+          update(task.id, { status: 'missed' });
           if (!task.notifiedEnd) {
-            showNotification(`⏰ Time's up: ${task.title}`, {
-              body: 'Your allocated time has ended. Mark complete if done!',
-              tag: `end-${task.id}`,
-            });
-            updateTask(task.id, { notifiedEnd: true });
+            showNotification(`⏰ Missed: ${task.title}`, { body: 'This task ended while you were away.', tag: `end-${task.id}` });
+            update(task.id, { notifiedEnd: true });
           }
         }
-      });
+        return;
+      }
 
-      lastCheckRef.current = Date.now();
-    };
+      // Normal transitions
+      if (task.status === 'pending' && isPast(start) && isFuture(end)) {
+        update(task.id, { status: 'in-progress' });
+        if (!task.notifiedStart) {
+          showNotification(`🔔 Starting: ${task.title}`, { body: 'Time to work!', tag: `start-${task.id}` });
+          update(task.id, { notifiedStart: true });
+        }
+      }
 
-    cancelAllNotifications();
-    todayTasks
-      .filter((t) => t.status === 'pending')
-      .forEach(scheduleTaskNotifications);
+      if ((task.status === 'pending' || task.status === 'in-progress') && isPast(end)) {
+        update(task.id, { status: 'missed' });
+        if (!task.notifiedEnd) {
+          showNotification(`⏰ Time's up: ${task.title}`, { body: 'Mark complete if done!', tag: `end-${task.id}` });
+          update(task.id, { notifiedEnd: true });
+        }
+      }
+    });
+  }, []); // Empty deps — uses refs
 
-    // Immediate check with catch-up logic
+  // Mount: start interval once
+  useEffect(() => {
     checkTasks();
     intervalRef.current = setInterval(checkTasks, SCHEDULE_INTERVAL);
 
-    // Visibility change: catch up when tab becomes visible
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        checkTasks();
-      }
+      if (document.visibilityState === 'visible') checkTasks();
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
@@ -93,5 +75,11 @@ export const useTaskScheduler = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
+  }, []); // Run once on mount
+
+  // Re-schedule notifications when tasks change (but don't restart interval)
+  useEffect(() => {
+    cancelAllNotifications();
+    todayTasks.filter((t) => t.status === 'pending').forEach(scheduleTaskNotifications);
   }, [todayTasks]);
 };
