@@ -5,6 +5,7 @@ import {
   persistentLocalCache, 
   persistentMultipleTabManager 
 } from 'firebase/firestore';
+import { getMessaging, onMessage } from 'firebase/messaging';
 
 // Read configuration from Vite environment variables
 const firebaseConfig = {
@@ -22,9 +23,37 @@ const app = initializeApp(firebaseConfig);
 // Export Auth
 export const auth = getAuth(app);
 
-
+// Initialize Firestore
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
 });
+
+// Initialize Messaging (only if supported)
+let messagingInstance: any = null;
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  try {
+    messagingInstance = getMessaging(app);
+    console.log('✅ Firebase Messaging initialized');
+    
+    // Handle foreground messages
+    onMessage(messagingInstance, (payload) => {
+      console.log('📩 Message received in foreground:', payload);
+      if (payload.notification) {
+        new Notification(payload.notification.title || 'Korgix', {
+          body: payload.notification.body,
+          icon: payload.notification.icon || '/icons/Korgix.png',
+          badge: '/icons/Korgix.png',
+          tag: payload.data?.tag || 'fcm-default',
+          requireInteraction: true,
+          data: payload.data,
+        });
+      }
+    });
+  } catch (err) {
+    console.error('❌ Messaging initialization failed:', err);
+  }
+}
+
+export const messaging = messagingInstance;

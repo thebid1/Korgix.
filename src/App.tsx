@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { TaskListView } from './components/TaskListView';
 import { AddTaskView } from './components/AddTaskView';
 import { Onboarding } from './components/Onboarding';
-import { useTaskScheduler } from './hooks/useTaskScheduler';
+import { useTaskScheduler } from './hooks/useTaskScheduler'; 
 import { InstallPrompt } from './components/InstallPrompt';
-import { requestNotificationPermission } from './utils/notifications';
+import { NotificationPermission } from './components/NotificationPermission';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { useTaskStore } from './stores/taskStore';
+import { requestFCMPermission } from './utils/fcm';
 
 type Page = 'loading' | 'onboarding' | 'list' | 'add';
 
@@ -16,11 +17,20 @@ const isInStandaloneMode = () => {
     (window.navigator as any).standalone === true;
 };
 
+// NEW: Helper function to detect mobile devices (Phones & Tablets)
+const isMobileDevice = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  // Checks for Android, iOS, and other mobile operating systems
+  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+};
+
 function App() {
   const [page, setPage] = useState<Page>('loading');
   const [animatingOut, setAnimatingOut] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  // NEW: State to hold device type
+  const [isMobile] = useState(isMobileDevice()); 
   const loadToday = useTaskStore((state) => state.loadToday);
 
   useEffect(() => {
@@ -31,9 +41,7 @@ function App() {
     return () => mq.removeEventListener('change', handleChange);
   }, []);
 
-  useEffect(() => {
-    requestNotificationPermission();
-  }, []);
+  // Note: NotificationPermission component handles the UI prompt
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -41,6 +49,8 @@ function App() {
       if (currentUser) {
         setPage('list');
         loadToday();
+        // Initialize FCM for push notifications after auth
+        requestFCMPermission().catch(err => console.log('FCM setup:', err));
       } else {
         setPage('onboarding');
       }
@@ -61,8 +71,8 @@ function App() {
     }, 250);
   };
 
-  // NOT INSTALLED: Show ONLY install prompt, block everything
-  if (!isInstalled) {
+  // UPDATED: Show install prompt ONLY if it's a mobile device AND it's not installed
+  if (isMobile && !isInstalled) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: 'var(--bg)' }}>
         <div className="text-center mb-8">
@@ -87,7 +97,12 @@ function App() {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg)' }}>
       {page === 'onboarding' && <Onboarding onComplete={() => setPage('list')} />}
-      {page === 'list' && <TaskListView onAdd={goToAdd} user={user} />}
+      {page === 'list' && (
+        <>
+          <NotificationPermission />
+          <TaskListView onAdd={goToAdd} user={user} />
+        </>
+      )}
       {page === 'add' && (
         <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
           <AddTaskView onClose={goToList} />

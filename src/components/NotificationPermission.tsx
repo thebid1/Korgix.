@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { requestNotificationPermission } from '../utils/notifications';
+import { requestFCMPermission } from '../utils/fcm';
 import { Bell, X } from 'lucide-react';
 
 export const NotificationPermission = () => {
@@ -12,7 +13,11 @@ export const NotificationPermission = () => {
 
   const handleEnable = async () => {
     const granted = await requestNotificationPermission();
-    if (granted) setShow(false);
+    if (granted) {
+      // Also initialize FCM for push notifications
+      await requestFCMPermission();
+      setShow(false);
+    }
   };
 
   if (!show) return null;

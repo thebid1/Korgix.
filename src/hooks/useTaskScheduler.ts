@@ -80,6 +80,9 @@ export const useTaskScheduler = () => {
   // Re-schedule notifications when tasks change (but don't restart interval)
   useEffect(() => {
     cancelAllNotifications();
-    todayTasks.filter((t) => t.status === 'pending').forEach(scheduleTaskNotifications);
+    // Schedule for pending and in-progress tasks (exclude completed/missed)
+    todayTasks
+      .filter((t) => t.status === 'pending' || t.status === 'in-progress')
+      .forEach(scheduleTaskNotifications);
   }, [todayTasks]);
 };
