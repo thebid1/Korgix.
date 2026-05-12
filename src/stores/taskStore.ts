@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Task } from '../types';
 import { auth, db } from '../firebase';
-import { 
-  collection, doc, setDoc, updateDoc, deleteDoc, 
+import {
+  collection, doc, setDoc, updateDoc, deleteDoc,
   query, where, getDocs, enableIndexedDbPersistence,
-  onSnapshot
+  onSnapshot, orderBy
 } from 'firebase/firestore';
 
 try {
@@ -36,6 +36,12 @@ interface TaskState {
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
+const getTodayMidnightISO = () => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now.toISOString();
+};
+
 export const useTaskStore = create<TaskState>()(
   persist(
     (set, get) => ({
@@ -54,20 +60,18 @@ export const useTaskStore = create<TaskState>()(
 
         set({ isLoading: true, error: null });
         try {
-          const { selectedDate } = get();
           const tasksRef = collection(db, 'users', userId, 'tasks');
-          const q = query(tasksRef, where('date', '==', selectedDate));
+          const q = query(tasksRef, where('startTime', '>=', getTodayMidnightISO()), orderBy('startTime', 'asc'));
           const querySnapshot = await getDocs(q);
 
           const tasks: Task[] = [];
           querySnapshot.forEach((docSnap) => {
-            tasks.push({ 
-              id: docSnap.id, 
-              ...docSnap.data() 
+            tasks.push({
+              id: docSnap.id,
+              ...docSnap.data()
             } as Task);
           });
 
-          tasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
           set({ todayTasks: tasks, isLoading: false });
         } catch (err) {
           console.error('loadToday error:', err);
@@ -83,14 +87,13 @@ export const useTaskStore = create<TaskState>()(
         if (prevUnsub) prevUnsub();
 
         const tasksRef = collection(db, 'users', userId, 'tasks');
-        const q = query(tasksRef, where('date', '==', get().selectedDate));
+        const q = query(tasksRef, where('startTime', '>=', getTodayMidnightISO()), orderBy('startTime', 'asc'));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
           const tasks: Task[] = [];
           snapshot.forEach((docSnap) => {
             tasks.push({ id: docSnap.id, ...docSnap.data() } as Task);
           });
-          tasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
           set({ todayTasks: tasks, isLoading: false });
         }, (err) => {
           console.error('Subscription error:', err);
