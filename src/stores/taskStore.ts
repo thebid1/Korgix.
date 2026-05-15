@@ -3,11 +3,11 @@ import { persist } from 'zustand/middleware';
 import { Task } from '../types';
 import { auth, db } from '../firebase';
 import {
-  collection, doc, setDoc, updateDoc, deleteDoc,
+  collection, doc, setDoc, updateDoc, deleteDoc, getDoc,
   query, where, getDocs, enableIndexedDbPersistence,
   onSnapshot, orderBy
 } from 'firebase/firestore';
-import { generateRecurringInstances } from '../utils/recurrence';
+import { generateRecurringInstances, generateNextInstance } from '../utils/recurrence';
 
 try {
   enableIndexedDbPersistence(db);
@@ -62,36 +62,25 @@ export const useTaskStore = create<TaskState>()(
         set({ isLoading: true, error: null });
         try {
           const tasksRef = collection(db, 'users', userId, 'tasks');
-          const q = query(tasksRef, where('startTime', '>=', getTodayMidnightISO()), orderBy('startTime', 'asc'));
+          // Fetch tasks from today up to 365 days in the future for upcoming tasks
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + 365);
+          futureDate.setHours(23, 59, 59, 999);
+          
+          const q = query(tasksRef, where('startTime', '>=', getTodayMidnightISO()), where('startTime', '<=', futureDate.toISOString()), orderBy('startTime', 'asc'));
           const querySnapshot = await getDocs(q);
 
-          const tasks: Task[] = [];
-          const recurringTasks: Task[] = [];
+          const allTasks: Task[] = [];
 
           querySnapshot.forEach((docSnap) => {
             const task = { id: docSnap.id, ...docSnap.data() } as Task;
             
-            // Skip parent recurring tasks - only include instances
+            // Skip parent recurring tasks - they're just templates
             if (task.isRecurringParent) {
-              // Generate instances for recurring tasks
-              if (task.recurrence && task.recurrence.type !== 'none') {
-                const instances = generateRecurringInstances(task, task.recurrence, 365);
-                recurringTasks.push(...instances);
-              }
-            } else {
-              tasks.push(task);
+              return;
             }
-          });
 
-          // Combine and filter to today's tasks
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-          const todayEnd = new Date();
-          todayEnd.setHours(23, 59, 59, 999);
-
-          const allTasks = [...tasks, ...recurringTasks].filter((task) => {
-            const taskStart = new Date(task.startTime);
-            return taskStart >= todayStart && taskStart <= todayEnd;
+            allTasks.push(task);
           });
 
           // Sort by start time
@@ -112,36 +101,25 @@ export const useTaskStore = create<TaskState>()(
         if (prevUnsub) prevUnsub();
 
         const tasksRef = collection(db, 'users', userId, 'tasks');
-        const q = query(tasksRef, where('startTime', '>=', getTodayMidnightISO()), orderBy('startTime', 'asc'));
+        // Fetch tasks from today up to 365 days in the future
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 365);
+        futureDate.setHours(23, 59, 59, 999);
+        
+        const q = query(tasksRef, where('startTime', '>=', getTodayMidnightISO()), where('startTime', '<=', futureDate.toISOString()), orderBy('startTime', 'asc'));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
-          const tasks: Task[] = [];
-          const recurringTasks: Task[] = [];
+          const allTasks: Task[] = [];
 
           snapshot.forEach((docSnap) => {
             const task = { id: docSnap.id, ...docSnap.data() } as Task;
             
-            // Skip parent recurring tasks - only include instances
+            // Skip parent recurring tasks - they're just templates
             if (task.isRecurringParent) {
-              // Generate instances for recurring tasks
-              if (task.recurrence && task.recurrence.type !== 'none') {
-                const instances = generateRecurringInstances(task, task.recurrence, 365);
-                recurringTasks.push(...instances);
-              }
-            } else {
-              tasks.push(task);
+              return;
             }
-          });
 
-          // Combine and filter to today's tasks
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-          const todayEnd = new Date();
-          todayEnd.setHours(23, 59, 59, 999);
-
-          const allTasks = [...tasks, ...recurringTasks].filter((task) => {
-            const taskStart = new Date(task.startTime);
-            return taskStart >= todayStart && taskStart <= todayEnd;
+            allTasks.push(task);
           });
 
           // Sort by start time
@@ -176,6 +154,21 @@ export const useTaskStore = create<TaskState>()(
             Object.entries(newTask).filter(([_, v]) => v !== undefined)
           );
           await setDoc(taskRef, cleanTask);
+
+          // If recurring, create only the first instance
+          if (newTask.isRecurringParent && newTask.recurrence && newTask.recurrence.type !== 'none') {
+            const instances = generateRecurringInstances(newTask, newTask.recurrence);
+            
+            // Only create the first instance, next ones will be generated on-demand
+            if (instances.length > 0) {
+              const firstInstance = instances[0];
+              const cleanInstance = Object.fromEntries(
+                Object.entries(firstInstance).filter(([_, v]) => v !== undefined)
+              );
+              const instanceRef = doc(db, 'users', userId, 'tasks', firstInstance.id);
+              await setDoc(instanceRef, cleanInstance);
+            }
+          }
         } catch (err) {
           console.error('addTask error:', err);
           throw err;
@@ -187,6 +180,7 @@ export const useTaskStore = create<TaskState>()(
         if (!userId) throw new Error('User not logged in');
 
         try {
+          // Update the exact task ID (instance or parent)
           const taskRef = doc(db, 'users', userId, 'tasks', id);
           const cleanUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -203,6 +197,7 @@ export const useTaskStore = create<TaskState>()(
         if (!userId) throw new Error('User not logged in');
 
         try {
+          // Delete the exact task ID (instance or parent)
           const taskRef = doc(db, 'users', userId, 'tasks', id);
           await deleteDoc(taskRef);
         } catch (err) {
@@ -212,10 +207,45 @@ export const useTaskStore = create<TaskState>()(
       },
 
       markComplete: async (id) => {
-        await get().updateTask(id, {
-          status: 'completed',
-          completedAt: new Date().toISOString(),
-        });
+        const userId = auth.currentUser?.uid;
+        if (!userId) throw new Error('User not logged in');
+
+        try {
+          // First, update the task to completed
+          const taskRef = doc(db, 'users', userId, 'tasks', id);
+          await updateDoc(taskRef, {
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+          });
+
+          // Check if this is a recurring instance and create the next one
+          const taskSnap = await getDoc(taskRef);
+          if (taskSnap.exists()) {
+            const completedTask = { id: taskSnap.id, ...taskSnap.data() } as Task;
+            
+            if (completedTask.parentTaskId && completedTask.recurrence && completedTask.recurrence.type !== 'none') {
+              // Get the parent task
+              const parentRef = doc(db, 'users', userId, 'tasks', completedTask.parentTaskId);
+              const parentSnap = await getDoc(parentRef);
+              
+              if (parentSnap.exists()) {
+                const parentTask = { id: parentSnap.id, ...parentSnap.data() } as Task;
+                const nextInstance = generateNextInstance(completedTask, parentTask, completedTask.recurrence);
+                
+                if (nextInstance) {
+                  const cleanInstance = Object.fromEntries(
+                    Object.entries(nextInstance).filter(([_, v]) => v !== undefined)
+                  );
+                  const nextRef = doc(db, 'users', userId, 'tasks', nextInstance.id);
+                  await setDoc(nextRef, cleanInstance);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('markComplete error:', err);
+          throw err;
+        }
       },
 
       setSelectedDate: (date) => set({ selectedDate: date }),

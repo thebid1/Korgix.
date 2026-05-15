@@ -27,10 +27,14 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
   };
 
   const isDone = task.status === 'completed';
+  // For recurring instances, mark the instance itself, not the parent
+  const targetId = task.id;
 
   const handleDelete = () => {
     if (confirm('Delete this task?')) {
-      deleteTask(task.id);
+      // For recurring instances, delete the instance
+      // For parent tasks, delete the parent (which will leave instances orphaned)
+      deleteTask(targetId);
       onClose();
     }
   };
@@ -113,7 +117,7 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
           {!isDone && (
             <button
               onClick={() => {
-                markComplete(task.id);
+                markComplete(targetId);
                 onClose();
               }}
               className="flex-1 py-3 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
@@ -126,7 +130,11 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
           {onEdit && (
             <button
               onClick={() => {
-                onEdit(task);
+                // Pass the parent task for recurring instances so edits apply to the parent
+                const editTask = task.parentTaskId
+                  ? { ...task, id: task.parentTaskId }
+                  : task;
+                onEdit(editTask);
                 onClose();
               }}
               className="flex-1 py-3 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
