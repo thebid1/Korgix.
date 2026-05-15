@@ -51,9 +51,43 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
-      onComplete(); 
+      onComplete();
     } catch (err: any) {
-      setError(err.message);
+      const friendlyMessage = getFirebaseErrorMessage(err.code, err.message);
+      setError(friendlyMessage);
+    }
+  };
+
+  const getFirebaseErrorMessage = (code: string, rawMessage: string): string => {
+    switch (code) {
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Contact support.';
+      case 'auth/user-not-found':
+        return 'No account found with this email. Try signing up instead.';
+      case 'auth/wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'auth/invalid-credential':
+        return 'Invalid email or password. Please check your credentials.';
+      case 'auth/email-already-in-use':
+        return 'An account already exists with this email. Try signing in instead.';
+      case 'auth/weak-password':
+        return 'Password is too weak. Use at least 6 characters.';
+      case 'auth/too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'auth/network-request-failed':
+        return 'Network error. Check your internet connection.';
+      case 'auth/invalid-api-key':
+        return 'Configuration error. Please contact support.';
+      case 'auth/app-not-authorized':
+        return 'This app is not authorized. Please contact support.';
+      default:
+        // If it's a generic error, show something user-friendly instead of raw Firebase text
+        if (rawMessage?.includes('Firebase')) {
+          return 'Something went wrong. Please try again.';
+        }
+        return rawMessage || 'An unexpected error occurred. Please try again.';
     }
   };
 

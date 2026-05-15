@@ -1,14 +1,15 @@
 import { Task } from '../types';
 import { useTaskStore } from '../stores/taskStore';
-import { X, Check, Trash2, Clock, AlignLeft } from 'lucide-react';
+import { X, Check, Trash2, Clock, AlignLeft, Pencil } from 'lucide-react';
 import { formatTime, formatDate } from '../utils/time';
 
 interface TaskDetailProps {
   task: Task;
   onClose: () => void;
+  onEdit?: (task: Task) => void;
 }
 
-export const TaskDetail = ({ task, onClose }: TaskDetailProps) => {
+export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
   const { markComplete, deleteTask } = useTaskStore();
 
   const statusColors = {
@@ -122,10 +123,23 @@ export const TaskDetail = ({ task, onClose }: TaskDetailProps) => {
               Mark Complete
             </button>
           )}
+          {onEdit && (
+            <button
+              onClick={() => {
+                onEdit(task);
+                onClose();
+              }}
+              className="flex-1 py-3 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: 'var(--surface-light)', color: 'var(--text)' }}
+            >
+              <Pencil size={18} />
+              Edit
+            </button>
+          )}
           <button
             onClick={handleDelete}
             className="flex-1 py-3 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
-            style={{ background: 'var(--surface-light)', color: 'var(--text-secondary)' }}
+            style={{ background: 'var(--surface-light)', color: 'var(--danger)' }}
           >
             <Trash2 size={18} />
             Delete

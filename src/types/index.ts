@@ -1,4 +1,11 @@
 export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'missed';
+export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | 'none';
+
+export interface RecurrencePattern {
+  type: RecurrenceType;
+  interval: number; // For custom: every N days/weeks/months
+  unit?: 'days' | 'weeks' | 'months'; // For custom recurrence
+}
 
 export interface Task {
   id: string;
@@ -12,6 +19,9 @@ export interface Task {
   completedAt?: string;
   notifiedStart: boolean;
   notifiedEnd: boolean;
+  recurrence?: RecurrencePattern | null;
+  isRecurringParent?: boolean; // Marks this as a parent recurring task
+  parentTaskId?: string; // Links instances back to parent for recurring tasks
 }
 
 export interface DayPlan {

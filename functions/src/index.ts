@@ -52,4 +52,3 @@ export const checkDueTasksAndNotify = onSchedule("every 1 minutes", async () => 
     console.error("Error running the scheduled task checker:", error);
   }
 });
-

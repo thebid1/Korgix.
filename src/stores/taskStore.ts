@@ -7,6 +7,7 @@ import {
   query, where, getDocs, enableIndexedDbPersistence,
   onSnapshot, orderBy
 } from 'firebase/firestore';
+import { generateRecurringInstances } from '../utils/recurrence';
 
 try {
   enableIndexedDbPersistence(db);
@@ -65,14 +66,38 @@ export const useTaskStore = create<TaskState>()(
           const querySnapshot = await getDocs(q);
 
           const tasks: Task[] = [];
+          const recurringTasks: Task[] = [];
+
           querySnapshot.forEach((docSnap) => {
-            tasks.push({
-              id: docSnap.id,
-              ...docSnap.data()
-            } as Task);
+            const task = { id: docSnap.id, ...docSnap.data() } as Task;
+            
+            // Skip parent recurring tasks - only include instances
+            if (task.isRecurringParent) {
+              // Generate instances for recurring tasks
+              if (task.recurrence && task.recurrence.type !== 'none') {
+                const instances = generateRecurringInstances(task, task.recurrence, 365);
+                recurringTasks.push(...instances);
+              }
+            } else {
+              tasks.push(task);
+            }
           });
 
-          set({ todayTasks: tasks, isLoading: false });
+          // Combine and filter to today's tasks
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const todayEnd = new Date();
+          todayEnd.setHours(23, 59, 59, 999);
+
+          const allTasks = [...tasks, ...recurringTasks].filter((task) => {
+            const taskStart = new Date(task.startTime);
+            return taskStart >= todayStart && taskStart <= todayEnd;
+          });
+
+          // Sort by start time
+          allTasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+          set({ todayTasks: allTasks, isLoading: false });
         } catch (err) {
           console.error('loadToday error:', err);
           set({ error: (err as Error).message, isLoading: false });
@@ -91,10 +116,38 @@ export const useTaskStore = create<TaskState>()(
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
           const tasks: Task[] = [];
+          const recurringTasks: Task[] = [];
+
           snapshot.forEach((docSnap) => {
-            tasks.push({ id: docSnap.id, ...docSnap.data() } as Task);
+            const task = { id: docSnap.id, ...docSnap.data() } as Task;
+            
+            // Skip parent recurring tasks - only include instances
+            if (task.isRecurringParent) {
+              // Generate instances for recurring tasks
+              if (task.recurrence && task.recurrence.type !== 'none') {
+                const instances = generateRecurringInstances(task, task.recurrence, 365);
+                recurringTasks.push(...instances);
+              }
+            } else {
+              tasks.push(task);
+            }
           });
-          set({ todayTasks: tasks, isLoading: false });
+
+          // Combine and filter to today's tasks
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const todayEnd = new Date();
+          todayEnd.setHours(23, 59, 59, 999);
+
+          const allTasks = [...tasks, ...recurringTasks].filter((task) => {
+            const taskStart = new Date(task.startTime);
+            return taskStart >= todayStart && taskStart <= todayEnd;
+          });
+
+          // Sort by start time
+          allTasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+          set({ todayTasks: allTasks, isLoading: false });
         }, (err) => {
           console.error('Subscription error:', err);
           set({ error: (err as Error).message });
@@ -114,6 +167,7 @@ export const useTaskStore = create<TaskState>()(
           createdAt: new Date().toISOString(),
           notifiedStart: false,
           notifiedEnd: false,
+          isRecurringParent: taskData.recurrence && taskData.recurrence.type !== 'none' ? true : false,
         };
 
         try {

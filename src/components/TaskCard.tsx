@@ -7,9 +7,10 @@ import { useEffect, useState } from 'react';
 interface TaskCardProps {
   task: Task;
   index: number;
+  onEdit?: (task: Task) => void;
 }
 
-export const TaskCard = ({ task, index }: TaskCardProps) => {
+export const TaskCard = ({ task, index, onEdit }: TaskCardProps) => {
   const { markComplete, deleteTask } = useTaskStore();
   const [countdown, setCountdown] = useState('');
 
@@ -41,9 +42,9 @@ export const TaskCard = ({ task, index }: TaskCardProps) => {
   }, [task.status, task.endTime]);
 
   return (
-    <div 
-      className="rounded-2xl p-4 mb-3 flex items-center gap-3 animate-slide-up transition-all hover:opacity-80"
-      style={{ 
+    <div
+      className="w-full rounded-2xl p-4 flex items-center gap-3 animate-slide-up transition-all hover:opacity-80 text-left active:scale-95"
+      style={{
         background: 'var(--surface)',
         animationDelay: `${index * 50}ms`,
         opacity: 0,

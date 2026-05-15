@@ -13,10 +13,11 @@ type Filter = 'today' | 'upcoming' | 'done' | 'all';
 
 interface TaskListViewProps {
   onAdd: () => void;
+  onEdit?: (task: Task) => void;
   user: any;
 }
 
-export const TaskListView = ({ onAdd, user }: TaskListViewProps) => {
+export const TaskListView = ({ onAdd, onEdit, user }: TaskListViewProps) => {
   const { todayTasks, subscribeToTasks, selectedDate, setSelectedDate, isLoading } = useTaskStore();
   const [filter, setFilter] = useState<Filter>('today');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -100,16 +101,16 @@ export const TaskListView = ({ onAdd, user }: TaskListViewProps) => {
             <div
               key={task.id}
               onClick={() => setSelectedTask(task)}
-              className="cursor-pointer"
+              className="cursor-pointer mb-3"
             >
-              <TaskCard task={task} index={i} />
+              <TaskCard task={task} index={i} onEdit={onEdit} />
             </div>
           ))}
         </div>
       )}
 
       {selectedTask && (
-        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} onEdit={onEdit} />
       )}
 
       <button

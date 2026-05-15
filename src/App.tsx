@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { TaskListView } from './components/TaskListView';
 import { AddTaskView } from './components/AddTaskView';
+import { EditTaskView } from './components/EditTaskView';
+import { RecurrenceModal } from './components/RecurrenceModal';
 import { Onboarding } from './components/Onboarding';
 import { useTaskScheduler } from './hooks/useTaskScheduler'; 
 import { InstallPrompt } from './components/InstallPrompt';
@@ -9,8 +11,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { useTaskStore } from './stores/taskStore';
 import { requestFCMPermission } from './utils/fcm';
+import { Task, RecurrencePattern } from './types';
 
-type Page = 'loading' | 'onboarding' | 'list' | 'add';
+type Page = 'loading' | 'onboarding' | 'list' | 'add' | 'edit';
 
 const isInStandaloneMode = () => {
   return window.matchMedia('(display-mode: standalone)').matches || 
@@ -31,6 +34,10 @@ function App() {
   const [isInstalled, setIsInstalled] = useState(false);
   // NEW: State to hold device type
   const [isMobile] = useState(isMobileDevice()); 
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showRecurrenceModal, setShowRecurrenceModal] = useState(false);
+  const [recurrenceCallback, setRecurrenceCallback] = useState<((pattern: RecurrencePattern | null) => void) | null>(null);
+  const [recurrenceInitial, setRecurrenceInitial] = useState<RecurrencePattern | null | undefined>(null);
   const loadToday = useTaskStore((state) => state.loadToday);
 
   useEffect(() => {
@@ -63,12 +70,35 @@ function App() {
     setPage('add');
   };
 
+  const goToEdit = (task: Task) => {
+    setEditingTask(task);
+    setAnimatingOut(false);
+    setPage('edit');
+  };
+
   const goToList = () => {
     setAnimatingOut(true);
     setTimeout(() => {
       setPage('list');
+      setEditingTask(null);
       setAnimatingOut(false);
     }, 250);
+  };
+
+  const handleOpenRecurrence = (
+    initial: RecurrencePattern | null | undefined,
+    callback: (pattern: RecurrencePattern | null) => void
+  ) => {
+    setRecurrenceInitial(initial);
+    setRecurrenceCallback(() => callback);
+    setShowRecurrenceModal(true);
+  };
+
+  const handleCloseRecurrence = (pattern: RecurrencePattern | null) => {
+    if (recurrenceCallback) {
+      recurrenceCallback(pattern);
+    }
+    setShowRecurrenceModal(false);
   };
 
   // UPDATED: Show install prompt ONLY if it's a mobile device AND it's not installed
@@ -100,12 +130,33 @@ function App() {
       {page === 'list' && (
         <>
           <NotificationPermission />
-          <TaskListView onAdd={goToAdd} user={user} />
+          <TaskListView onAdd={goToAdd} onEdit={goToEdit} user={user} />
         </>
       )}
       {page === 'add' && (
         <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
-          <AddTaskView onClose={goToList} />
+          <AddTaskView 
+            onClose={goToList}
+            onOpenRecurrence={(callback) => handleOpenRecurrence(null, callback)}
+          />
+        </div>
+      )}
+      {page === 'edit' && editingTask && (
+        <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+          <EditTaskView 
+            task={editingTask}
+            onClose={goToList}
+            onOpenRecurrence={(initial, callback) => handleOpenRecurrence(initial, callback)}
+          />
+        </div>
+      )}
+      {showRecurrenceModal && (
+        <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+          <RecurrenceModal
+            initial={recurrenceInitial}
+            onSelect={handleCloseRecurrence}
+            onClose={() => setShowRecurrenceModal(false)}
+          />
         </div>
       )}
     </div>

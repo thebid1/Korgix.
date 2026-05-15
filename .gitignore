@@ -3,6 +3,8 @@ dist/
 build/
 .env
 .env.local
+.env.staging
+.env.production.local
 .vite/
 dev-dist/
 *.tsbuildinfo

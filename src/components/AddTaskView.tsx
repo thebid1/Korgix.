@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import { getDateString } from '../utils/time';
-import { X, Clock, Bell } from 'lucide-react';
+import { X, Clock, Bell, RotateCw } from 'lucide-react';
+import { RecurrencePattern } from '../types';
 
 interface AddTaskViewProps {
   onClose: () => void;
+  onOpenRecurrence?: (callback: (pattern: RecurrencePattern | null) => void) => void;
 }
 
-export const AddTaskView = ({ onClose }: AddTaskViewProps) => {
+export const AddTaskView = ({ onClose, onOpenRecurrence }: AddTaskViewProps) => {
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recurrence, setRecurrence] = useState<RecurrencePattern | null>(null);
   const addTask = useTaskStore((s) => s.addTask);
 
   const handleSubmit = async () => {
@@ -34,6 +37,7 @@ export const AddTaskView = ({ onClose }: AddTaskViewProps) => {
         endTime: end.toISOString(),
         date: getDateString(start.toISOString()),
         description: notes.trim() || null,
+        recurrence: recurrence,
       });
       onClose();
     } catch (err) {
@@ -128,6 +132,35 @@ export const AddTaskView = ({ onClose }: AddTaskViewProps) => {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="text-[11px] font-bold tracking-widest uppercase mb-2 block" style={{ color: 'var(--text-muted)' }}>Repeat</label>
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenRecurrence) {
+                onOpenRecurrence((pattern) => {
+                  setRecurrence(pattern);
+                });
+              }
+            }}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl active:scale-95"
+            style={{ background: 'var(--surface)', color: 'var(--text)' }}
+          >
+            <div className="flex items-center gap-2">
+              <RotateCw size={16} style={{ color: 'var(--text-secondary)' }} />
+              <span className="text-sm font-medium">
+                {recurrence ? (
+                  recurrence.type === 'custom'
+                    ? `Every ${recurrence.interval} ${recurrence.unit}`
+                    : recurrence.type.charAt(0).toUpperCase() + recurrence.type.slice(1)
+                ) : (
+                  'No repeat'
+                )}
+              </span>
+            </div>
+          </button>
         </div>
 
         <div className="mb-6">
