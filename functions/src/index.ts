@@ -7,18 +7,16 @@ const messaging = admin.messaging();
 
 export const checkDueTasksAndNotify = onSchedule("every 1 minutes", async () => {
   const now = new Date();
+  let notifiedCount = 0;
+
   try {
-    const tasksSnapshot = await db.collectionGroup("tasks")
+    // --- START notifications ---
+    const startSnapshot = await db.collectionGroup("tasks")
       .where("status", "==", "pending")
       .where("notifiedStart", "==", false)
       .get();
 
-    if (tasksSnapshot.empty) {
-      console.log("No pending tasks to notify right now.");
-      return;
-    }
-
-    for (const doc of tasksSnapshot.docs) {
+    for (const doc of startSnapshot.docs) {
       const task = doc.data();
       const taskStartTime = new Date(task.startTime);
 
@@ -39,14 +37,56 @@ export const checkDueTasksAndNotify = onSchedule("every 1 minutes", async () => 
 
             try {
               await messaging.send(payload);
-              console.log(`Successfully sent notification for task ${task.title}`);
+              console.log(`Successfully sent start notification for task ${task.title}`);
               await doc.ref.update({notifiedStart: true});
+              notifiedCount++;
             } catch (error) {
-              console.error(`Failed to send notification for task ${doc.id}:`, error);
+              console.error(`Failed to send start notification for task ${doc.id}:`, error);
             }
           }
         }
       }
+    }
+
+    // --- END notifications ---
+    const endSnapshot = await db.collectionGroup("tasks")
+      .where("notifiedEnd", "==", false)
+      .get();
+
+    for (const doc of endSnapshot.docs) {
+      const task = doc.data();
+      const taskEndTime = new Date(task.endTime);
+
+      if (taskEndTime <= now && task.status !== "completed") {
+        const userId = doc.ref.parent.parent?.id;
+        if (userId) {
+          const userDoc = await db.collection("users").doc(userId).get();
+          const userData = userDoc.data();
+
+          if (userData && userData.fcmToken) {
+            const payload = {
+              notification: {
+                title: "Time's up!",
+                body: `Your task "${task.title}" has ended. Mark it complete if you're done!`,
+              },
+              token: userData.fcmToken,
+            };
+
+            try {
+              await messaging.send(payload);
+              console.log(`Successfully sent end notification for task ${task.title}`);
+              await doc.ref.update({notifiedEnd: true});
+              notifiedCount++;
+            } catch (error) {
+              console.error(`Failed to send end notification for task ${doc.id}:`, error);
+            }
+          }
+        }
+      }
+    }
+
+    if (notifiedCount === 0) {
+      console.log("No tasks to notify right now.");
     }
   } catch (error) {
     console.error("Error running the scheduled task checker:", error);

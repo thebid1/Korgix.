@@ -24,6 +24,7 @@ export const EditTaskView = ({ task, onClose, onOpenRecurrence }: EditTaskViewPr
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const updateTask = useTaskStore((s) => s.updateTask);
   const deleteTask = useTaskStore((s) => s.deleteTask);
+  const generateFirstInstance = useTaskStore((s) => s.generateFirstInstance);
 
   // Convert ISO string to datetime-local format
   const formatForInput = (isoString: string) => {
@@ -63,16 +64,24 @@ export const EditTaskView = ({ task, onClose, onOpenRecurrence }: EditTaskViewPr
 
     setIsSubmitting(true);
     try {
+      const wasRecurring = !!task.isRecurringParent;
+      const isNowRecurring = !!recurrence && recurrence.type !== 'none';
+
       const updates: Partial<Task> = {
         title: title.trim(),
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         description: notes.trim() || null,
         recurrence: recurrence,
-        isRecurringParent: recurrence && recurrence.type !== 'none' ? true : false,
+        isRecurringParent: isNowRecurring,
       };
 
       await updateTask(task.id, updates);
+
+      if (!wasRecurring && isNowRecurring) {
+        await generateFirstInstance({ ...task, ...updates, id: task.id } as Task);
+      }
+
       onClose();
     } catch (err) {
       setError((err as Error).message);

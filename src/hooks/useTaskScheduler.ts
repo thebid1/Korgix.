@@ -8,23 +8,27 @@ const SCHEDULE_INTERVAL = 30000;
 export const useTaskScheduler = () => {
   const todayTasks = useTaskStore((s) => s.todayTasks);
   const updateTask = useTaskStore((s) => s.updateTask);
+  const markMissed = useTaskStore((s) => s.markMissed);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const tasksRef = useRef(todayTasks);
   const updateRef = useRef(updateTask);
+  const missedRef = useRef(markMissed);
 
   // Keep refs in sync without triggering re-renders
   tasksRef.current = todayTasks;
   updateRef.current = updateTask;
+  missedRef.current = markMissed;
 
   const checkTasks = useCallback(() => {
     const tasks = tasksRef.current;
     const update = updateRef.current;
+    const markMissed = missedRef.current;
 
     tasks.forEach((task) => {
       const start = new Date(task.startTime);
       const end = new Date(task.endTime);
 
-      // CATCH-UP: App was closed and reopened
+      // Start transition: pending → in-progress (or missed if already past end)
       if (task.status === 'pending' && isPast(start)) {
         if (isFuture(end)) {
           update(task.id, { status: 'in-progress' });
@@ -33,11 +37,10 @@ export const useTaskScheduler = () => {
             update(task.id, { notifiedStart: true });
           }
         } else {
-          update(task.id, { status: 'missed' });
           if (!task.notifiedEnd) {
             showNotification(`⏰ Missed: ${task.title}`, { body: 'This task ended while you were away.', tag: `end-${task.id}` });
-            update(task.id, { notifiedEnd: true });
           }
+          markMissed(task.id);
         }
         return;
       }
@@ -52,11 +55,10 @@ export const useTaskScheduler = () => {
       }
 
       if ((task.status === 'pending' || task.status === 'in-progress') && isPast(end)) {
-        update(task.id, { status: 'missed' });
         if (!task.notifiedEnd) {
           showNotification(`⏰ Time's up: ${task.title}`, { body: 'Mark complete if done!', tag: `end-${task.id}` });
-          update(task.id, { notifiedEnd: true });
         }
+        markMissed(task.id);
       }
     });
   }, []); // Empty deps — uses refs

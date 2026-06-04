@@ -21,17 +21,22 @@ try {
 
 interface TaskState {
   todayTasks: Task[];
+  allTasks: Task[];
   selectedDate: string;
   isLoading: boolean;
   error: string | null;
   unsubscribe: (() => void) | null;
 
   loadToday: () => Promise<void>;
+  loadAllTasks: () => Promise<void>;
   subscribeToTasks: () => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'status' | 'notifiedStart' | 'notifiedEnd'>) => Promise<void>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   markComplete: (id: string) => Promise<void>;
+  markMissed: (id: string) => Promise<void>;
+  generateFirstInstance: (parentTask: Task) => Promise<void>;
+  catchUpRecurringTasks: () => Promise<void>;
   setSelectedDate: (date: string) => void;
 }
 
@@ -47,6 +52,7 @@ export const useTaskStore = create<TaskState>()(
   persist(
     (set, get) => ({
       todayTasks: [],
+      allTasks: [],
       selectedDate: getTodayString(),
       isLoading: false,
       error: null,
@@ -87,8 +93,50 @@ export const useTaskStore = create<TaskState>()(
           allTasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
           set({ todayTasks: allTasks, isLoading: false });
+
+          // Silently catch up old recurring instances without showing them in the UI
+          await get().catchUpRecurringTasks();
         } catch (err) {
           console.error('loadToday error:', err);
+          set({ error: (err as Error).message, isLoading: false });
+        }
+      },
+
+      loadAllTasks: async () => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) {
+          set({ allTasks: [], error: 'User not logged in' });
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          const tasksRef = collection(db, 'users', userId, 'tasks');
+          const pastDate = new Date();
+          pastDate.setFullYear(pastDate.getFullYear() - 2);
+
+          const q = query(
+            tasksRef,
+            where('startTime', '>=', pastDate.toISOString()),
+            orderBy('startTime', 'asc')
+          );
+          const querySnapshot = await getDocs(q);
+
+          const loadedTasks: Task[] = [];
+
+          querySnapshot.forEach((docSnap) => {
+            const task = { id: docSnap.id, ...docSnap.data() } as Task;
+            if (task.isRecurringParent) {
+              return;
+            }
+            loadedTasks.push(task);
+          });
+
+          loadedTasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+          set({ allTasks: loadedTasks, isLoading: false });
+        } catch (err) {
+          console.error('loadAllTasks error:', err);
           set({ error: (err as Error).message, isLoading: false });
         }
       },
@@ -245,6 +293,91 @@ export const useTaskStore = create<TaskState>()(
         } catch (err) {
           console.error('markComplete error:', err);
           throw err;
+        }
+      },
+
+      markMissed: async (id) => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) throw new Error('User not logged in');
+
+        try {
+          const taskRef = doc(db, 'users', userId, 'tasks', id);
+          await updateDoc(taskRef, { status: 'missed', notifiedEnd: true });
+
+          const taskSnap = await getDoc(taskRef);
+          if (taskSnap.exists()) {
+            const missedTask = { id: taskSnap.id, ...taskSnap.data() } as Task;
+
+            if (missedTask.parentTaskId && missedTask.recurrence && missedTask.recurrence.type !== 'none') {
+              const parentRef = doc(db, 'users', userId, 'tasks', missedTask.parentTaskId);
+              const parentSnap = await getDoc(parentRef);
+
+              if (parentSnap.exists()) {
+                const parentTask = { id: parentSnap.id, ...parentSnap.data() } as Task;
+                const nextInstance = generateNextInstance(missedTask, parentTask, missedTask.recurrence);
+
+                if (nextInstance) {
+                  const cleanInstance = Object.fromEntries(
+                    Object.entries(nextInstance).filter(([_, v]) => v !== undefined)
+                  );
+                  const nextRef = doc(db, 'users', userId, 'tasks', nextInstance.id);
+                  await setDoc(nextRef, cleanInstance);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('markMissed error:', err);
+          throw err;
+        }
+      },
+
+      generateFirstInstance: async (parentTask) => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) throw new Error('User not logged in');
+
+        if (!parentTask.recurrence || parentTask.recurrence.type === 'none') return;
+
+        try {
+          const instances = generateRecurringInstances(parentTask, parentTask.recurrence);
+          if (instances.length > 0) {
+            const firstInstance = instances[0];
+            const cleanInstance = Object.fromEntries(
+              Object.entries(firstInstance).filter(([_, v]) => v !== undefined)
+            );
+            const instanceRef = doc(db, 'users', userId, 'tasks', firstInstance.id);
+            await setDoc(instanceRef, cleanInstance);
+          }
+        } catch (err) {
+          console.error('generateFirstInstance error:', err);
+          throw err;
+        }
+      },
+
+      catchUpRecurringTasks: async () => {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+
+        try {
+          const tasksRef = collection(db, 'users', userId, 'tasks');
+          const q = query(tasksRef, where('status', '==', 'pending'));
+          const snapshot = await getDocs(q);
+
+          const now = new Date();
+          const missedTasks: Task[] = [];
+
+          snapshot.forEach((docSnap) => {
+            const task = { id: docSnap.id, ...docSnap.data() } as Task;
+            if (task.parentTaskId && new Date(task.endTime).getTime() < now.getTime()) {
+              missedTasks.push(task);
+            }
+          });
+
+          for (const task of missedTasks) {
+            await get().markMissed(task.id);
+          }
+        } catch (err) {
+          console.error('catchUpRecurringTasks error:', err);
         }
       },
 

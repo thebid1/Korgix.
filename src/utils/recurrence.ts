@@ -123,7 +123,14 @@ export const generateNextInstance = (completedInstance: Task, parentTask: Task, 
   // Don't generate if we've reached max
   if (currentIndex + 1 >= maxInstances) return null;
 
-  const nextDate = getNextOccurrenceDate(new Date(completedInstance.startTime), recurrence);
+  let nextDate = getNextOccurrenceDate(new Date(completedInstance.startTime), recurrence);
+
+  // Catch-up: skip past occurrences so the next instance is always in the future
+  const now = new Date();
+  while (nextDate.getTime() <= now.getTime()) {
+    nextDate = getNextOccurrenceDate(nextDate, recurrence);
+  }
+
   const timeDiffMs = new Date(parentTask.endTime).getTime() - new Date(parentTask.startTime).getTime();
 
   const nextEndTime = new Date(nextDate);

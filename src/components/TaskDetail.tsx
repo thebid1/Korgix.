@@ -132,7 +132,7 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
               onClick={() => {
                 // Pass the parent task for recurring instances so edits apply to the parent
                 const editTask = task.parentTaskId
-                  ? { ...task, id: task.parentTaskId }
+                  ? { ...task, id: task.parentTaskId, parentTaskId: undefined, instanceIndex: undefined }
                   : task;
                 onEdit(editTask);
                 onClose();

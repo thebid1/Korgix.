@@ -6,7 +6,7 @@ import { TaskDetail } from './TaskDetail';
 import { EmptyState } from './EmptyState';
 import { FilterTabs } from './FilterTabs';
 import { getTodayString } from '../utils/time';
-import { Plus } from 'lucide-react';
+import { Plus, BarChart3 } from 'lucide-react';
 import type { Task } from '../types';
 
 type Filter = 'today' | 'upcoming' | 'done' | 'all';
@@ -14,10 +14,11 @@ type Filter = 'today' | 'upcoming' | 'done' | 'all';
 interface TaskListViewProps {
   onAdd: () => void;
   onEdit?: (task: Task) => void;
+  onAnalytics?: () => void;
   user: any;
 }
 
-export const TaskListView = ({ onAdd, onEdit, user }: TaskListViewProps) => {
+export const TaskListView = ({ onAdd, onEdit, onAnalytics, user }: TaskListViewProps) => {
   const { todayTasks, subscribeToTasks, selectedDate, setSelectedDate, isLoading } = useTaskStore();
   const [filter, setFilter] = useState<Filter>('today');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -77,7 +78,18 @@ export const TaskListView = ({ onAdd, onEdit, user }: TaskListViewProps) => {
         <p className="text-[11px] font-bold tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
           {dayName}, {dateStr}
         </p>
-        <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Korgix</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Korgix</h1>
+          {onAnalytics && (
+            <button
+              onClick={onAnalytics}
+              className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"
+              style={{ background: 'var(--surface)' }}
+            >
+              <BarChart3 size={20} style={{ color: 'var(--text)' }} />
+            </button>
+          )}
+        </div>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
           {totalToday === 0 ? 'No tasks today — give your day a shape.' : `${completedToday} of ${totalToday} done today`}
         </p>

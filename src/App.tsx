@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TaskListView } from './components/TaskListView';
+import { AnalyticsView } from './components/AnalyticsView';
 import { AddTaskView } from './components/AddTaskView';
 import { EditTaskView } from './components/EditTaskView';
 import { RecurrenceModal } from './components/RecurrenceModal';
@@ -13,7 +14,7 @@ import { useTaskStore } from './stores/taskStore';
 import { requestFCMPermission } from './utils/fcm';
 import { Task, RecurrencePattern } from './types';
 
-type Page = 'loading' | 'onboarding' | 'list' | 'add' | 'edit';
+type Page = 'loading' | 'onboarding' | 'list' | 'analytics' | 'add' | 'edit';
 
 const isInStandaloneMode = () => {
   return window.matchMedia('(display-mode: standalone)').matches || 
@@ -68,6 +69,11 @@ function App() {
   const goToAdd = () => {
     setAnimatingOut(false);
     setPage('add');
+  };
+
+  const goToAnalytics = () => {
+    setAnimatingOut(false);
+    setPage('analytics');
   };
 
   const goToEdit = (task: Task) => {
@@ -130,8 +136,13 @@ function App() {
       {page === 'list' && (
         <>
           <NotificationPermission />
-          <TaskListView onAdd={goToAdd} onEdit={goToEdit} user={user} />
+          <TaskListView onAdd={goToAdd} onEdit={goToEdit} onAnalytics={goToAnalytics} user={user} />
         </>
+      )}
+      {page === 'analytics' && (
+        <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+          <AnalyticsView onBack={goToList} />
+        </div>
       )}
       {page === 'add' && (
         <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
