@@ -80,7 +80,7 @@ export const AddTaskView = ({ onClose, onOpenRecurrence }: AddTaskViewProps) => 
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>New task</h2>
         <button onClick={handleSubmit} disabled={!title.trim() || isSubmitting}
           className="text-sm font-semibold px-4 py-2 rounded-full active:scale-95 disabled:opacity-30"
-          style={{ background: title.trim() && !isSubmitting ? 'var(--accent)' : 'var(--surface)', color: title.trim() && !isSubmitting ? '#000' : 'var(--text-muted)' }}>
+          style={{ background: title.trim() && !isSubmitting ? 'var(--accent)' : 'var(--surface)', color: title.trim() && !isSubmitting ? 'var(--inverse-text)' : 'var(--text-muted)' }}>
           {isSubmitting ? '...' : 'Add'}
         </button>
       </div>

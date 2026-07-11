@@ -26,9 +26,9 @@ export const FilterTabs = ({ active, onChange, counts }: FilterTabsProps) => {
             onClick={() => onChange(tab.key)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all active:scale-95"
             style={{
-              background: isActive ? '#ffffff' : 'var(--surface)',
-              color: isActive ? '#000000' : '#ffffff',
-              boxShadow: isActive ? '0 1px 4px rgba(255,255,255,0.15)' : 'none',
+              background: isActive ? 'var(--inverse-bg)' : 'var(--surface)',
+              color: isActive ? 'var(--inverse-text)' : 'var(--text)',
+              boxShadow: isActive ? 'var(--shadow)' : 'none',
             }}
           >
             {tab.label}
@@ -36,8 +36,8 @@ export const FilterTabs = ({ active, onChange, counts }: FilterTabsProps) => {
               <span 
                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
                 style={{ 
-                  background: isActive ? '#00000015' : '#ffffff15',
-                  color: isActive ? '#000000' : '#ffffff',
+                  background: isActive ? 'rgba(0,0,0,0.08)' : 'rgba(128,128,128,0.15)',
+                  color: isActive ? 'var(--inverse-text)' : 'var(--text)',
                 }}
               >
                 {counts[tab.key]}

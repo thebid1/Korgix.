@@ -205,8 +205,8 @@ export const AnalyticsView = ({ onBack }: AnalyticsViewProps) => {
               onClick={() => setRange(tab.key)}
               className="px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all active:scale-95"
               style={{
-                background: isActive ? '#ffffff' : 'var(--surface)',
-                color: isActive ? '#000000' : '#ffffff',
+                background: isActive ? 'var(--inverse-bg)' : 'var(--surface)',
+                color: isActive ? 'var(--inverse-text)' : 'var(--text)',
               }}
             >
               {tab.label}
@@ -343,7 +343,7 @@ export const AnalyticsView = ({ onBack }: AnalyticsViewProps) => {
           <div className="text-center">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2"
-              style={{ background: 'rgba(255,69,58,0.12)' }}
+              style={{ background: 'var(--danger-dim)' }}
             >
               <XCircle size={28} style={{ color: 'var(--danger)' }} />
             </div>
@@ -409,7 +409,7 @@ export const AnalyticsView = ({ onBack }: AnalyticsViewProps) => {
                     background:
                       task.status === 'completed'
                         ? 'var(--accent-dim)'
-                        : 'rgba(255,69,58,0.12)',
+                        : 'var(--danger-dim)',
                     color: task.status === 'completed' ? 'var(--accent)' : 'var(--danger)',
                   }}
                 >

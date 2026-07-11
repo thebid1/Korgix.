@@ -7,6 +7,7 @@ import { EmptyState } from './EmptyState';
 import { FilterTabs } from './FilterTabs';
 import { getTodayString } from '../utils/time';
 import { Plus, BarChart3 } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 import type { Task } from '../types';
 
 type Filter = 'today' | 'upcoming' | 'done' | 'all';
@@ -80,15 +81,18 @@ export const TaskListView = ({ onAdd, onEdit, onAnalytics, user }: TaskListViewP
         </p>
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Korgix</h1>
-          {onAnalytics && (
-            <button
-              onClick={onAnalytics}
-              className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"
-              style={{ background: 'var(--surface)' }}
-            >
-              <BarChart3 size={20} style={{ color: 'var(--text)' }} />
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <ThemeToggle compact />
+            {onAnalytics && (
+              <button
+                onClick={onAnalytics}
+                className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"
+                style={{ background: 'var(--surface)' }}
+              >
+                <BarChart3 size={20} style={{ color: 'var(--text)' }} />
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
           {totalToday === 0 ? 'No tasks today — give your day a shape.' : `${completedToday} of ${totalToday} done today`}
@@ -134,7 +138,7 @@ export const TaskListView = ({ onAdd, onEdit, onAnalytics, user }: TaskListViewP
           boxShadow: '0 4px 20px rgba(48, 209, 88, 0.35)',
         }}
       >
-        <Plus size={24} color="#000" strokeWidth={2.5} />
+        <Plus size={24} color="var(--inverse-text)" strokeWidth={2.5} />
       </button>
     </div>
   );

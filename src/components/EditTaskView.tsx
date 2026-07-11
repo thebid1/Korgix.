@@ -133,7 +133,7 @@ export const EditTaskView = ({ task, onClose, onOpenRecurrence }: EditTaskViewPr
           className="text-sm font-semibold px-4 py-2 rounded-full active:scale-95 disabled:opacity-30"
           style={{
             background: title.trim() && !isSubmitting && !task.parentTaskId ? 'var(--accent)' : 'var(--surface)',
-            color: title.trim() && !isSubmitting && !task.parentTaskId ? '#000' : 'var(--text-muted)',
+            color: title.trim() && !isSubmitting && !task.parentTaskId ? 'var(--inverse-text)' : 'var(--text-muted)',
           }}
         >
           {isSubmitting ? '...' : 'Save'}
@@ -289,7 +289,7 @@ export const EditTaskView = ({ task, onClose, onOpenRecurrence }: EditTaskViewPr
                 onClick={handleDelete}
                 disabled={isSubmitting}
                 className="px-4 py-3 rounded-xl text-sm font-semibold active:scale-95 disabled:opacity-30"
-                style={{ background: 'var(--danger)', color: '#fff' }}
+                style={{ background: 'var(--danger)', color: 'var(--inverse-text)' }}
               >
                 {isSubmitting ? '...' : 'Delete'}
               </button>

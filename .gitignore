@@ -14,3 +14,10 @@ dev-dist/
 .idea/
 *.log
 coverage/
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Generated screenshots / theme preview assets
+*.screenshot.png
+korgix-*.png

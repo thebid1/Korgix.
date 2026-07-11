@@ -68,7 +68,7 @@ export const TaskCard = ({ task, index, onEdit }: TaskCardProps) => {
           background: isDone ? 'var(--accent)' : 'transparent',
         }}
       >
-        {isDone && <Check size={14} color="#000" strokeWidth={3} />}
+        {isDone && <Check size={14} color="var(--inverse-text)" strokeWidth={3} />}
       </button>
 
       {/* Content */}

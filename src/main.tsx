@@ -2,6 +2,12 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
+import { applyThemeAttribute } from './stores/themeStore'
+
+// Apply the persisted theme before the first paint to avoid a flash
+const stored = localStorage.getItem('korgix-theme')
+const parsed = stored ? JSON.parse(stored) : null
+applyThemeAttribute(parsed?.state?.theme ?? 'system')
 
 // Register service worker for PWA + background notifications
 if ('serviceWorker' in navigator) {

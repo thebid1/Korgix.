@@ -11,6 +11,7 @@ import { NotificationPermission } from './components/NotificationPermission';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { useTaskStore } from './stores/taskStore';
+import { useThemeStore } from './stores/themeStore';
 import { requestFCMPermission } from './utils/fcm';
 import { Task, RecurrencePattern } from './types';
 
@@ -45,6 +46,17 @@ function App() {
     setIsInstalled(isInStandaloneMode());
     const mq = window.matchMedia('(display-mode: standalone)');
     const handleChange = (e: MediaQueryListEvent) => setIsInstalled(e.matches || (window.navigator as any).standalone === true);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, []);
+
+  // Re-apply theme when the system preference changes while in 'system' mode
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const { theme, applyTheme } = useThemeStore.getState();
+      if (theme === 'system') applyTheme();
+    };
     mq.addEventListener('change', handleChange);
     return () => mq.removeEventListener('change', handleChange);
   }, []);

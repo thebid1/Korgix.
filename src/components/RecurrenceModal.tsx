@@ -113,7 +113,7 @@ export const RecurrenceModal = ({ onClose, onSelect, initial }: RecurrenceModalP
                 className="w-full flex items-center justify-between px-4 py-4 rounded-xl active:scale-95"
                 style={{
                   background: selectedType === type ? 'var(--accent)' : 'var(--surface)',
-                  color: selectedType === type ? '#000' : 'var(--text)',
+                  color: selectedType === type ? 'var(--inverse-text)' : 'var(--text)',
                 }}
               >
                 <div className="text-left">
@@ -122,7 +122,7 @@ export const RecurrenceModal = ({ onClose, onSelect, initial }: RecurrenceModalP
                     <p
                       className="text-xs mt-1"
                       style={{
-                        color: selectedType === type ? 'rgba(0,0,0,0.6)' : 'var(--text-muted)',
+                        color: selectedType === type ? 'var(--inverse-text)' : 'var(--text-muted)',
                       }}
                     >
                       {getDescription(type)}
@@ -184,7 +184,7 @@ export const RecurrenceModal = ({ onClose, onSelect, initial }: RecurrenceModalP
                     className="px-3 py-3 rounded-xl font-semibold text-sm active:scale-95"
                     style={{
                       background: customUnit === unit ? 'var(--accent)' : 'var(--surface)',
-                      color: customUnit === unit ? '#000' : 'var(--text)',
+                      color: customUnit === unit ? 'var(--inverse-text)' : 'var(--text)',
                     }}
                   >
                     {unit.charAt(0).toUpperCase() + unit.slice(1)}
@@ -208,7 +208,7 @@ export const RecurrenceModal = ({ onClose, onSelect, initial }: RecurrenceModalP
             <button
               onClick={handleCustomConfirm}
               className="w-full px-4 py-3 rounded-xl font-semibold active:scale-95"
-              style={{ background: 'var(--accent)', color: '#000' }}
+              style={{ background: 'var(--accent)', color: 'var(--inverse-text)' }}
             >
               Confirm
             </button>

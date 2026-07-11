@@ -35,7 +35,7 @@ export const NotificationPermission = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleEnable} className="text-xs font-bold px-3.5 py-2 rounded-full active:scale-95" style={{ background: 'var(--accent)', color: '#000' }}>Allow</button>
+          <button onClick={handleEnable} className="text-xs font-bold px-3.5 py-2 rounded-full active:scale-95" style={{ background: 'var(--accent)', color: 'var(--inverse-text)' }}>Allow</button>
           <button onClick={() => setShow(false)} className="p-2 rounded-full" style={{ color: 'var(--text-muted)' }}><X size={14} /></button>
         </div>
       </div>

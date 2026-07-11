@@ -44,7 +44,7 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
       {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0, 0, 0, 0.4)' }}
+        style={{ background: 'var(--inverse-bg)', opacity: 0.4 }}
         onClick={onClose}
       />
 
@@ -121,7 +121,7 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
                 onClose();
               }}
               className="flex-1 py-3 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
-              style={{ background: 'var(--accent)', color: '#000' }}
+              style={{ background: 'var(--accent)', color: 'var(--inverse-text)' }}
             >
               <Check size={18} />
               Mark Complete

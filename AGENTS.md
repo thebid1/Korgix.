@@ -64,7 +64,8 @@ This document contains project-specific context for AI coding agents working on 
 │   ├── types/
 │   │   └── index.ts          # Task, RecurrencePattern, DayPlan types
 │   ├── stores/
-│   │   └── taskStore.ts      # Zustand store: Firestore CRUD, subscriptions, recurrence
+│   │   ├── taskStore.ts      # Zustand store: Firestore CRUD, subscriptions, recurrence
+│   │   └── themeStore.ts     # Theme state (dark / light / system) with localStorage persistence
 │   ├── hooks/
 │   │   └── useTaskScheduler.ts # Time-based status transitions + local notification scheduling
 │   ├── components/           # React components (see below)
@@ -94,6 +95,7 @@ This document contains project-specific context for AI coding agents working on 
 - `EmptyState.tsx` — Empty list placeholder
 - `InstallPrompt.tsx` — Mobile PWA install prompt
 - `NotificationPermission.tsx` — UI for requesting notification permissions
+- `ThemeToggle.tsx` — Dark / light / system theme switcher
 
 ---
 
@@ -142,6 +144,7 @@ Firestore path: `users/{userId}/tasks`
 
 ### State Management
 - `taskStore.ts` uses Zustand with localStorage persistence (only `selectedDate` is persisted).
+- `themeStore.ts` persists the chosen theme (`dark` | `light` | `system`) in `localStorage`. The resolved theme is applied to `<html data-theme="...">` before the first paint to avoid flashes.
 - Firestore is the source of truth. The app calls `subscribeToTasks()` to open a real-time `onSnapshot` listener for the user's task subcollection.
 - `loadToday()` is a one-time fetch used on auth state change.
 

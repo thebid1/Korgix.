@@ -19,7 +19,7 @@ export const InstallPrompt = () => {
       {os === 'ios' ? (
         <div className="space-y-4">
           <p>To use Korgix on your iPhone, you must add it to your Home Screen.</p>
-          <div className="bg-gray-100 p-4 rounded-lg text-left text-sm text-black">
+          <div className="p-4 rounded-lg text-left text-sm" style={{ background: 'var(--surface-light)', color: 'var(--text)' }}>
             <p>1. Tap the <strong>Share</strong> button at the bottom of Safari (the square with an arrow pointing up).</p>
             <p>2. Scroll down and tap <strong>Add to Home Screen</strong>.</p>
             <p>3. Open Korgix from your new home screen icon!</p>
@@ -29,7 +29,7 @@ export const InstallPrompt = () => {
         <div className="space-y-4">
           <p>For the best experience and background notifications, please install the app.</p>
           {/* For Android, you can usually trigger the native browser install prompt if you captured the beforeinstallprompt event */}
-          <button className="w-full py-3 rounded-lg font-bold" style={{ background: 'var(--accent)', color: 'white' }}>
+          <button className="w-full py-3 rounded-lg font-bold" style={{ background: 'var(--accent)', color: 'var(--inverse-text)' }}>
             Install Korgix
           </button>
         </div>
