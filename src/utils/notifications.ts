@@ -55,6 +55,9 @@ export const registerPushNotifications = async (): Promise<boolean> => {
 
 const scheduledTimeouts = new Map<string, ReturnType<typeof setTimeout>[]>();
 
+const END_WARNING_MINUTES = 2;
+const END_WARNING_MS = END_WARNING_MINUTES * 60 * 1000;
+
 const formatTimeShort = (iso: string) => {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
@@ -80,10 +83,11 @@ export const scheduleTaskNotifications = (task: Task) => {
   }
 
   if (!task.notifiedEnd && endTime > now && task.status !== 'completed') {
-    const endDelay = endTime - now;
+    const warningTime = endTime - END_WARNING_MS;
+    const endDelay = Math.max(0, warningTime - now);
     const timeout = setTimeout(() => {
-      showNotification(`⏰ Time's Up: ${task.title}`, {
-        body: 'Your allocated time has ended. Mark complete if done!',
+      showNotification(`⏰ Time's almost up: ${task.title}`, {
+        body: `${END_WARNING_MINUTES} minutes left. Mark complete if done!`,
         tag: `end-${task.id}`,
         requireInteraction: true,
       });

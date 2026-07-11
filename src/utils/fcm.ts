@@ -32,9 +32,14 @@ export const initializeFCM = async (): Promise<string | null> => {
   try {
     console.log('📍 Getting FCM token...');
     
+    // Reuse the existing app service worker so Firebase does not register a
+    // second one at the same scope.
+    const serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js');
+
     // Get FCM token
     const token = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration,
     });
 
     if (!token) {

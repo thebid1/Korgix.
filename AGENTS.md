@@ -31,9 +31,10 @@ This document contains project-specific context for AI coding agents working on 
 - **firebase-admin** + **firebase-functions**
 
 ### PWA / Notifications
-- **vite-plugin-pwa** generates the web app manifest and Workbox service worker for asset caching
-- A **custom service worker** (`public/sw.js`) handles push events and notification clicks for FCM background delivery
+- **vite-plugin-pwa** generates the web app manifest and a single combined service worker (`src/sw.ts` → `/sw.js`)
+- The **combined service worker** handles both Workbox precaching/runtime caching and FCM push/notification-click events
 - **Firebase Cloud Messaging** for cross-device push notifications
+- **`usePWAUpdate`** uses `workbox-window` to detect waiting updates and trigger reloads from the Settings screen
 
 ---
 
@@ -67,7 +68,8 @@ This document contains project-specific context for AI coding agents working on 
 │   │   ├── taskStore.ts      # Zustand store: Firestore CRUD, subscriptions, recurrence
 │   │   └── themeStore.ts     # Theme state (dark / light / system) with localStorage persistence
 │   ├── hooks/
-│   │   └── useTaskScheduler.ts # Time-based status transitions + local notification scheduling
+│   │   ├── useTaskScheduler.ts # Time-based status transitions + local notification scheduling
+│   │   └── usePWAUpdate.ts     # Service-worker update detection and controls
 │   ├── components/           # React components (see below)
 │   ├── utils/
 │   │   ├── time.ts           # Date formatting and task time helpers
@@ -96,6 +98,8 @@ This document contains project-specific context for AI coding agents working on 
 - `InstallPrompt.tsx` — Mobile PWA install prompt
 - `NotificationPermission.tsx` — UI for requesting notification permissions
 - `ThemeToggle.tsx` — Dark / light / system theme switcher
+- `Toggle.tsx` — Reusable on/off switch
+- `SettingsView.tsx` — App settings (updates, appearance, about)
 
 ---
 
@@ -145,6 +149,7 @@ Firestore path: `users/{userId}/tasks`
 ### State Management
 - `taskStore.ts` uses Zustand with localStorage persistence (only `selectedDate` is persisted).
 - `themeStore.ts` persists the chosen theme (`dark` | `light` | `system`) in `localStorage`. The resolved theme is applied to `<html data-theme="...">` before the first paint to avoid flashes.
+- `pwaUpdateStore.ts` persists the user's auto-update preference and tracks update state (`needRefresh`, `offlineReady`, `checking`, `lastChecked`).
 - Firestore is the source of truth. The app calls `subscribeToTasks()` to open a real-time `onSnapshot` listener for the user's task subcollection.
 - `loadToday()` is a one-time fetch used on auth state change.
 
@@ -154,6 +159,7 @@ Firestore path: `users/{userId}/tasks`
   - `pending` → `in-progress` when `startTime` passes
   - `pending`/`in-progress` → `missed` when `endTime` passes
 - It also triggers `showNotification()` (Web Notifications API) for immediate user feedback.
+- End-time notifications are sent ~2 minutes **before** the task ends as a warning; the task is marked `missed` only after a 5-minute grace period past the actual `endTime`.
 
 ### Task Lifecycle (Server-Side)
 - `checkDueTasksAndNotify` is a Firebase scheduled function running every minute.
@@ -168,8 +174,9 @@ Firestore path: `users/{userId}/tasks`
 
 ### Notifications (Dual Layer)
 1. **Foreground:** `onMessage` handler in `firebase.ts` creates a `new Notification(...)` directly.
-2. **Background:** The custom `sw.js` handles `push` events and displays the notification via the service worker.
+2. **Background:** The combined `/sw.js` service worker handles `push` events and displays the notification via the service worker.
 3. **Local Scheduling:** `utils/notifications.ts` schedules `setTimeout`-based notifications for tasks while the app is open, so users see precise start/end alerts even without a server round-trip.
+4. **PWA Updates:** `usePWAUpdate.ts` uses `workbox-window` to listen for waiting service workers and triggers reloads from the Settings screen.
 
 ---
 

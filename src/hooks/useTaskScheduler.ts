@@ -4,6 +4,10 @@ import { scheduleTaskNotifications, showNotification, cancelAllNotifications } f
 import { isPast, isFuture } from 'date-fns';
 
 const SCHEDULE_INTERVAL = 30000;
+const END_WARNING_MINUTES = 2;
+const END_WARNING_MS = END_WARNING_MINUTES * 60 * 1000;
+const MISS_GRACE_MINUTES = 5;
+const MISS_GRACE_MS = MISS_GRACE_MINUTES * 60 * 1000;
 
 export const useTaskScheduler = () => {
   const todayTasks = useTaskStore((s) => s.todayTasks);
@@ -23,12 +27,14 @@ export const useTaskScheduler = () => {
     const tasks = tasksRef.current;
     const update = updateRef.current;
     const markMissed = missedRef.current;
+    const now = Date.now();
 
     tasks.forEach((task) => {
       const start = new Date(task.startTime);
       const end = new Date(task.endTime);
+      const warningTime = end.getTime() - END_WARNING_MS;
 
-      // Start transition: pending → in-progress (or missed if already past end)
+      // Start transition: pending → in-progress (or warn if already past end)
       if (task.status === 'pending' && isPast(start)) {
         if (isFuture(end)) {
           update(task.id, { status: 'in-progress' });
@@ -37,15 +43,16 @@ export const useTaskScheduler = () => {
             update(task.id, { notifiedStart: true });
           }
         } else {
+          // Task already ended before the user opened the app — show the warning once.
           if (!task.notifiedEnd) {
-            showNotification(`⏰ Missed: ${task.title}`, { body: 'This task ended while you were away.', tag: `end-${task.id}` });
+            showNotification(`⏰ Time's almost up: ${task.title}`, { body: 'This task already ended. Mark complete if done!', tag: `end-${task.id}` });
+            update(task.id, { notifiedEnd: true });
           }
-          markMissed(task.id);
         }
         return;
       }
 
-      // Normal transitions
+      // Normal start transition (handles edge case where scheduler missed the first branch)
       if (task.status === 'pending' && isPast(start) && isFuture(end)) {
         update(task.id, { status: 'in-progress' });
         if (!task.notifiedStart) {
@@ -54,10 +61,25 @@ export const useTaskScheduler = () => {
         }
       }
 
-      if ((task.status === 'pending' || task.status === 'in-progress') && isPast(end)) {
-        if (!task.notifiedEnd) {
-          showNotification(`⏰ Time's up: ${task.title}`, { body: 'Mark complete if done!', tag: `end-${task.id}` });
-        }
+      // End warning: notify a few minutes before the task ends
+      if (
+        (task.status === 'pending' || task.status === 'in-progress') &&
+        !task.notifiedEnd &&
+        now >= warningTime &&
+        now < end.getTime()
+      ) {
+        showNotification(`⏰ Time's almost up: ${task.title}`, {
+          body: `${END_WARNING_MINUTES} minutes left. Mark complete if done!`,
+          tag: `end-${task.id}`,
+        });
+        update(task.id, { notifiedEnd: true });
+      }
+
+      // Mark missed only after the grace period has passed
+      if (
+        (task.status === 'pending' || task.status === 'in-progress') &&
+        now >= end.getTime() + MISS_GRACE_MS
+      ) {
         markMissed(task.id);
       }
     });

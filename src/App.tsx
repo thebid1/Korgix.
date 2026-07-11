@@ -6,8 +6,10 @@ import { EditTaskView } from './components/EditTaskView';
 import { RecurrenceModal } from './components/RecurrenceModal';
 import { Onboarding } from './components/Onboarding';
 import { useTaskScheduler } from './hooks/useTaskScheduler'; 
+import { usePWAUpdate } from './hooks/usePWAUpdate';
 import { InstallPrompt } from './components/InstallPrompt';
 import { NotificationPermission } from './components/NotificationPermission';
+import { SettingsView } from './components/SettingsView';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { useTaskStore } from './stores/taskStore';
@@ -15,7 +17,7 @@ import { useThemeStore } from './stores/themeStore';
 import { requestFCMPermission } from './utils/fcm';
 import { Task, RecurrencePattern } from './types';
 
-type Page = 'loading' | 'onboarding' | 'list' | 'analytics' | 'add' | 'edit';
+type Page = 'loading' | 'onboarding' | 'list' | 'analytics' | 'add' | 'edit' | 'settings';
 
 const isInStandaloneMode = () => {
   return window.matchMedia('(display-mode: standalone)').matches || 
@@ -41,6 +43,7 @@ function App() {
   const [recurrenceCallback, setRecurrenceCallback] = useState<((pattern: RecurrencePattern | null) => void) | null>(null);
   const [recurrenceInitial, setRecurrenceInitial] = useState<RecurrencePattern | null | undefined>(null);
   const loadToday = useTaskStore((state) => state.loadToday);
+  const { checkForUpdate, updateNow } = usePWAUpdate();
 
   useEffect(() => {
     setIsInstalled(isInStandaloneMode());
@@ -86,6 +89,11 @@ function App() {
   const goToAnalytics = () => {
     setAnimatingOut(false);
     setPage('analytics');
+  };
+
+  const goToSettings = () => {
+    setAnimatingOut(false);
+    setPage('settings');
   };
 
   const goToEdit = (task: Task) => {
@@ -148,7 +156,7 @@ function App() {
       {page === 'list' && (
         <>
           <NotificationPermission />
-          <TaskListView onAdd={goToAdd} onEdit={goToEdit} onAnalytics={goToAnalytics} user={user} />
+          <TaskListView onAdd={goToAdd} onEdit={goToEdit} onAnalytics={goToAnalytics} onSettings={goToSettings} user={user} />
         </>
       )}
       {page === 'analytics' && (
@@ -170,6 +178,15 @@ function App() {
             task={editingTask}
             onClose={goToList}
             onOpenRecurrence={(initial, callback) => handleOpenRecurrence(initial, callback)}
+          />
+        </div>
+      )}
+      {page === 'settings' && (
+        <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+          <SettingsView
+            onBack={goToList}
+            onCheckUpdate={checkForUpdate}
+            onUpdateNow={updateNow}
           />
         </div>
       )}

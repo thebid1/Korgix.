@@ -6,7 +6,7 @@ import { TaskDetail } from './TaskDetail';
 import { EmptyState } from './EmptyState';
 import { FilterTabs } from './FilterTabs';
 import { getTodayString } from '../utils/time';
-import { Plus, BarChart3 } from 'lucide-react';
+import { Plus, BarChart3, Settings } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import type { Task } from '../types';
 
@@ -16,10 +16,11 @@ interface TaskListViewProps {
   onAdd: () => void;
   onEdit?: (task: Task) => void;
   onAnalytics?: () => void;
+  onSettings?: () => void;
   user: any;
 }
 
-export const TaskListView = ({ onAdd, onEdit, onAnalytics, user }: TaskListViewProps) => {
+export const TaskListView = ({ onAdd, onEdit, onAnalytics, onSettings, user }: TaskListViewProps) => {
   const { todayTasks, subscribeToTasks, selectedDate, setSelectedDate, isLoading } = useTaskStore();
   const [filter, setFilter] = useState<Filter>('today');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -83,6 +84,15 @@ export const TaskListView = ({ onAdd, onEdit, onAnalytics, user }: TaskListViewP
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>Korgix</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle compact />
+            {onSettings && (
+              <button
+                onClick={onSettings}
+                className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"
+                style={{ background: 'var(--surface)' }}
+              >
+                <Settings size={20} style={{ color: 'var(--text)' }} />
+              </button>
+            )}
             {onAnalytics && (
               <button
                 onClick={onAnalytics}
