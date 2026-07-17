@@ -19,6 +19,12 @@ import { Task, RecurrencePattern } from './types';
 
 type Page = 'loading' | 'onboarding' | 'list' | 'analytics' | 'add' | 'edit' | 'settings';
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  prompt(): Promise<void>;
+}
+
 const isInStandaloneMode = () => {
   return window.matchMedia('(display-mode: standalone)').matches || 
     (window.navigator as any).standalone === true;
@@ -38,12 +44,30 @@ function App() {
   const [isInstalled, setIsInstalled] = useState(false);
   // NEW: State to hold device type
   const [isMobile] = useState(isMobileDevice()); 
+  const [installDismissed, setInstallDismissed] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showRecurrenceModal, setShowRecurrenceModal] = useState(false);
   const [recurrenceCallback, setRecurrenceCallback] = useState<((pattern: RecurrencePattern | null) => void) | null>(null);
   const [recurrenceInitial, setRecurrenceInitial] = useState<RecurrencePattern | null | undefined>(null);
   const loadToday = useTaskStore((state) => state.loadToday);
   const { checkForUpdate, updateNow } = usePWAUpdate();
+
+  // Parse PWA shortcut / share target query params once on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const sharedTitle = params.get('title') || params.get('text') || '';
+    const sharedUrl = params.get('url') || '';
+
+    if (action === 'add') {
+      setPage('add');
+    }
+
+    // If a share target provided text, pre-fill is handled inside AddTaskView via URL params
+    if (sharedTitle || sharedUrl) {
+      setPage('add');
+    }
+  }, []);
 
   useEffect(() => {
     setIsInstalled(isInStandaloneMode());
@@ -128,7 +152,8 @@ function App() {
   };
 
   // UPDATED: Show install prompt ONLY if it's a mobile device AND it's not installed
-  if (isMobile && !isInstalled) {
+  // and the user hasn't already accepted/dismissed the native prompt this session.
+  if (isMobile && !isInstalled && !installDismissed) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: 'var(--bg)' }}>
         <div className="text-center mb-8">
@@ -137,7 +162,7 @@ function App() {
             Plan your day. Stay on track.
           </p>
         </div>
-        <InstallPrompt />
+        <InstallPrompt onInstall={() => setInstallDismissed(true)} />
       </div>
     );
   }

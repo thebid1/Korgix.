@@ -6,6 +6,7 @@ build/
 .env.staging
 .env.production
 .env.production.local
+.env.*.local
 .vite/
 dev-dist/
 *.tsbuildinfo
@@ -18,6 +19,22 @@ coverage/
 # Playwright MCP artifacts
 .playwright-mcp/
 
+# Firebase CLI cache and emulator data
+.firebase/
+firebase-export-*/
+emulator-data/
+*.runtimeconfig.json
+
+# Firebase service account keys (never commit these)
+serviceAccountKey.json
+service-account*.json
+*-firebase-adminsdk-*.json
+
+# Vercel CLI local metadata
+.vercel/
+
 # Generated screenshots / theme preview assets
 *.screenshot.png
 korgix-*.png
+
+appUpdates

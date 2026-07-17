@@ -101,7 +101,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
           {/* Main Hero Logo */}
           <img
-            src="/icons/Korgix.png"
+            src="/app/icons/Korgix.png"
             alt="Korgix Logo"
             className="w-28 h-28 mx-auto rounded-3xl shadow-xl mb-10"
           />
@@ -163,7 +163,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         <div className="text-center">
           {/* Logo on Auth Form */}
           <img
-            src="/icons/Korgix.png"
+            src="/app/icons/Korgix.png"
             alt="Korgix Logo"
             className="w-24 h-24 mx-auto rounded-3xl shadow-xl mb-4"
           />

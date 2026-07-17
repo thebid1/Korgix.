@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTaskStore } from '../stores/taskStore';
 import { getDateString } from '../utils/time';
 import { X, Clock, Bell, RotateCw } from 'lucide-react';
@@ -18,6 +18,20 @@ export const AddTaskView = ({ onClose, onOpenRecurrence }: AddTaskViewProps) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrencePattern | null>(null);
   const addTask = useTaskStore((s) => s.addTask);
+
+  // Pre-fill from PWA shortcut or Web Share Target params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedTitle = params.get('title')?.trim() || '';
+    const sharedText = params.get('text')?.trim() || '';
+    const sharedUrl = params.get('url')?.trim() || '';
+
+    if (sharedTitle) setTitle(sharedTitle);
+    if (sharedText) setNotes(sharedText);
+    if (sharedUrl) {
+      setNotes((prev) => (prev ? `${prev}\n${sharedUrl}` : sharedUrl));
+    }
+  }, []);
 
   const handleSubmit = async () => {
     setError('');

@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Workbox } from 'workbox-window';
 import { usePWAUpdateStore } from '../stores/pwaUpdateStore';
 
-const SW_URL = '/sw.js';
+const SW_URL = '/app/sw.js';
 
 interface UsePWAUpdateReturn {
   checkForUpdate: () => Promise<void>;

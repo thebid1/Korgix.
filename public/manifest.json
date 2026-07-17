@@ -2,33 +2,33 @@
   "name": "Korgix - Plan Your Day",
   "short_name": "Korgix",
   "description": "Plan your day. Stay on track.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/app/",
+  "scope": "/app/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0a0a",
   "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/icons/Korgix.png",
+      "src": "/app/icons/Korgix.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/Korgix.png",
+      "src": "/app/icons/Korgix.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/Korgix.png",
+      "src": "/app/icons/Korgix.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/Korgix.png",
+      "src": "/app/icons/Korgix.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -36,12 +36,12 @@
   ],
   "screenshots": [
     {
-      "src": "/icons/Korgix.png",
+      "src": "/app/icons/Korgix.png",
       "sizes": "540x720",
       "type": "image/png"
     },
     {
-      "src": "/icons/Korgix.png",
+      "src": "/app/icons/Korgix.png",
       "sizes": "1080x1440",
       "type": "image/png"
     }
@@ -52,13 +52,23 @@
       "name": "Add Task",
       "short_name": "Add",
       "description": "Quickly add a new task",
-      "url": "/?action=add",
+      "url": "/app/?action=add",
       "icons": [
         {
-          "src": "/icons/Korgix.png",
+          "src": "/app/icons/Korgix.png",
           "sizes": "192x192"
         }
       ]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/app/?action=add",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

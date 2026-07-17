@@ -43,8 +43,8 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
       if (payload.notification) {
         new Notification(payload.notification.title || 'Korgix', {
           body: payload.notification.body,
-          icon: payload.notification.icon || '/icons/Korgix.png',
-          badge: '/icons/Korgix.png',
+          icon: payload.notification.icon || '/app/icons/Korgix.png',
+          badge: '/app/icons/Korgix.png',
           tag: payload.data?.tag || 'fcm-default',
           requireInteraction: true,
           data: payload.data,

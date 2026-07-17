@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "rm -rf dist && tsc && vite build && cp appsite/index.html appsite/styles.css appsite/animations.js appsite/sw.js dist/ && cp -r appsite/icons dist/",
     "preview": "vite preview",
     "deploy:firebase": "firebase deploy --only functions"
   },

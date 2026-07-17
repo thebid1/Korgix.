@@ -1,6 +1,5 @@
-# Compiled JavaScript files
-lib/**/*.js
-lib/**/*.js.map
+# Compiled output (tsc build)
+lib/
 
 # TypeScript v1 declaration files
 typings/
@@ -8,3 +7,9 @@ typings/
 # Node.js dependency directory
 node_modules/
 *.local
+
+# Firebase emulator data / secrets
+*.runtimeconfig.json
+.secret.local
+firebase-export-*/
+emulator-data/
