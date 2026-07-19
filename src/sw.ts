@@ -53,7 +53,7 @@ self.addEventListener('push', (event) => {
     body: data.notification?.body || data.body || 'You have a new notification',
     icon: data.notification?.icon || data.icon || '/app/icons/Korgix.png',
     badge: data.notification?.badge || data.badge || '/app/icons/Korgix.png',
-    tag: data.notification?.tag || data.tag || 'fcm-default',
+    tag: data.notification?.tag || data.data?.tag || data.tag || 'fcm-default',
     requireInteraction: true,
     data: data.data || data,
   };

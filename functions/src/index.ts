@@ -37,6 +37,11 @@ export const checkDueTasksAndNotify = onSchedule("every 1 minutes", async () => 
                 title: "Time to focus!",
                 body: `Your task "${task.title}" starts now. Let's get to work!`,
               },
+              data: {
+                // Same tag the client uses for local start notifications, so
+                // foreground/background delivery collapses into one alert.
+                tag: `start-${doc.id}`,
+              },
               token: userData.fcmToken,
             };
 
@@ -75,6 +80,9 @@ export const checkDueTasksAndNotify = onSchedule("every 1 minutes", async () => 
               notification: {
                 title: "Time's almost up!",
                 body: `Your task "${task.title}" ends in ${END_NOTIFICATION_BUFFER_MINUTES} minutes. Mark it complete if you're done!`,
+              },
+              data: {
+                tag: `end-${doc.id}`,
               },
               token: userData.fcmToken,
             };

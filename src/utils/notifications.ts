@@ -6,31 +6,44 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return permission === 'granted';
 };
 
+// Tags of notifications shown recently by this page. Multiple systems (local
+// setTimeout scheduling, the interval scheduler, and foreground FCM pushes)
+// can fire for the same task event; the tag collapses them into one.
+const recentlyShown = new Map<string, number>();
+const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
+
 export const showNotification = (title: string, options?: NotificationOptions) => {
-  if (Notification.permission === 'granted') {
-    // Try service worker notification first (works in background)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification(title, {
-          icon: '/app/icons/Korgix.png',
-          badge: '/app/icons/Korgix.png',
-          ...options,
-        });
-      }).catch(() => {
-        // Fallback to regular notification
-        new Notification(title, {
-          icon: '/app/icons/Korgix.png',
-          badge: '/app/icons/Korgix.png',
-          ...options,
-        });
+  if (Notification.permission !== 'granted') return;
+
+  const tag = options?.tag;
+  if (tag) {
+    const lastShown = recentlyShown.get(tag);
+    if (lastShown && Date.now() - lastShown < DEDUPE_WINDOW_MS) return;
+    recentlyShown.set(tag, Date.now());
+  }
+
+  // Try service worker notification first (works in background)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.showNotification(title, {
+        icon: '/app/icons/Korgix.png',
+        badge: '/app/icons/Korgix.png',
+        ...options,
       });
-    } else {
+    }).catch(() => {
+      // Fallback to regular notification
       new Notification(title, {
         icon: '/app/icons/Korgix.png',
         badge: '/app/icons/Korgix.png',
         ...options,
       });
-    }
+    });
+  } else {
+    new Notification(title, {
+      icon: '/app/icons/Korgix.png',
+      badge: '/app/icons/Korgix.png',
+      ...options,
+    });
   }
 };
 

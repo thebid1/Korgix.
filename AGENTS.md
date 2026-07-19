@@ -183,10 +183,11 @@ Firestore path: `users/{userId}/tasks`
 - When an instance is marked complete, `generateNextInstance()` creates the next one on-demand (capped by `maxInstances` per recurrence type).
 
 ### Notifications (Dual Layer)
-1. **Foreground:** `onMessage` handler in `firebase.ts` creates a `new Notification(...)` directly.
+1. **Foreground:** `onMessage` handler in `firebase.ts` routes through `showNotification()`.
 2. **Background:** The combined `/app/sw.js` service worker handles `push` events and displays the notification via the service worker.
 3. **Local Scheduling:** `utils/notifications.ts` schedules `setTimeout`-based notifications for tasks while the app is open, so users see precise start/end alerts even without a server round-trip.
-4. **PWA Updates:** `usePWAUpdate.ts` uses `workbox-window` to listen for waiting service workers and triggers reloads from the Settings screen.
+4. **Dedupe:** All three layers use the same notification tag per task event (`start-{taskId}` / `end-{taskId}` — the server includes it in the FCM `data` payload). `showNotification()` tracks recently-shown tags (5-minute window) so the local scheduler, the interval scheduler, and the FCM push collapse into a single alert per event.
+5. **PWA Updates:** `usePWAUpdate.ts` uses `workbox-window` to listen for waiting service workers and triggers reloads from the Settings screen.
 
 ---
 

@@ -6,6 +6,7 @@ import {
   persistentMultipleTabManager 
 } from 'firebase/firestore';
 import { getMessaging, onMessage } from 'firebase/messaging';
+import { showNotification } from './utils/notifications';
 
 // Read configuration from Vite environment variables
 const firebaseConfig = {
@@ -37,11 +38,12 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
     messagingInstance = getMessaging(app);
     console.log('✅ Firebase Messaging initialized');
     
-    // Handle foreground messages
+    // Handle foreground messages — routed through showNotification so the
+    // tag-based dedupe collapses these with locally scheduled notifications.
     onMessage(messagingInstance, (payload) => {
       console.log('📩 Message received in foreground:', payload);
       if (payload.notification) {
-        new Notification(payload.notification.title || 'Korgix', {
+        showNotification(payload.notification.title || 'Korgix', {
           body: payload.notification.body,
           icon: payload.notification.icon || '/app/icons/Korgix.png',
           badge: '/app/icons/Korgix.png',
