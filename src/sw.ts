@@ -44,6 +44,14 @@ registerRoute(
   })
 );
 
+// Cache the actual font files (woff2) served from Google's CDN.
+registerRoute(
+  /^https:\/\/fonts\.gstatic\.com\/.*/i,
+  new CacheFirst({
+    cacheName: 'google-fonts-files-cache',
+  })
+);
+
 // FCM push handler — used by Firebase Cloud Messaging for background notifications.
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};

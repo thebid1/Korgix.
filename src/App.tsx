@@ -11,14 +11,16 @@ import { usePWAUpdate } from './hooks/usePWAUpdate';
 import { InstallPrompt } from './components/InstallPrompt';
 import { NotificationPermission } from './components/NotificationPermission';
 import { SettingsView } from './components/SettingsView';
+import { FocusTimerView } from './components/FocusTimerView';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { useTaskStore } from './stores/taskStore';
 import { useThemeStore } from './stores/themeStore';
+import { useFocusStore } from './stores/focusStore';
 import { requestFCMPermission } from './utils/fcm';
 import { Task, RecurrencePattern } from './types';
 
-type Page = 'loading' | 'onboarding' | 'list' | 'analytics' | 'add' | 'edit' | 'settings';
+type Page = 'loading' | 'onboarding' | 'list' | 'analytics' | 'add' | 'edit' | 'settings' | 'focus';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -52,6 +54,7 @@ function App() {
   const [recurrenceInitial, setRecurrenceInitial] = useState<RecurrencePattern | null | undefined>(null);
   const loadToday = useTaskStore((state) => state.loadToday);
   const { checkForUpdate, updateNow } = usePWAUpdate();
+  const focusTaskId = useFocusStore((state) => state.focusTaskId);
 
   // Parse PWA shortcut / share target query params once on mount
   useEffect(() => {
@@ -106,6 +109,14 @@ function App() {
     return () => unsubscribe();
   }, [loadToday]);
 
+  // When a task automatically starts, open the full-screen focus timer.
+  useEffect(() => {
+    if (focusTaskId) {
+      setAnimatingOut(false);
+      setPage('focus');
+    }
+  }, [focusTaskId]);
+
   const goToAdd = () => {
     setAnimatingOut(false);
     setPage('add');
@@ -132,6 +143,15 @@ function App() {
     setTimeout(() => {
       setPage('list');
       setEditingTask(null);
+      setAnimatingOut(false);
+    }, 250);
+  };
+
+  const handleCloseFocus = () => {
+    setAnimatingOut(true);
+    setTimeout(() => {
+      useFocusStore.getState().closeFocus();
+      setPage('list');
       setAnimatingOut(false);
     }, 250);
   };
@@ -214,6 +234,11 @@ function App() {
             onCheckUpdate={checkForUpdate}
             onUpdateNow={updateNow}
           />
+        </div>
+      )}
+      {page === 'focus' && (
+        <div className={`fixed inset-0 z-50 ${animatingOut ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+          <FocusTimerView onClose={handleCloseFocus} />
         </div>
       )}
       {showRecurrenceModal && (

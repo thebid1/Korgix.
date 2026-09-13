@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../stores/taskStore';
+import { useFocusStore } from '../stores/focusStore';
 import { scheduleTaskNotifications, showNotification, cancelAllNotifications } from '../utils/notifications';
 import { isPast, isFuture } from 'date-fns';
 
@@ -8,6 +9,13 @@ const END_WARNING_MINUTES = 2;
 const END_WARNING_MS = END_WARNING_MINUTES * 60 * 1000;
 const MISS_GRACE_MINUTES = 5;
 const MISS_GRACE_MS = MISS_GRACE_MINUTES * 60 * 1000;
+
+// Task ids that have already been transitioned into a focus session during the
+// current browser session. Must live at module scope (not a component ref) so
+// the guard survives TaskListView unmounting when the focus screen opens.
+// Otherwise the scheduler re-runs on remount with a stale local snapshot and
+// immediately re-opens the focus screen after the user closes it.
+const startedTaskIds = new Set<string>();
 
 export const useTaskScheduler = () => {
   const todayTasks = useTaskStore((s) => s.todayTasks);
@@ -37,10 +45,18 @@ export const useTaskScheduler = () => {
       // Start transition: pending → in-progress (or warn if already past end)
       if (task.status === 'pending' && isPast(start)) {
         if (isFuture(end)) {
-          update(task.id, { status: 'in-progress' });
-          if (!task.notifiedStart) {
-            showNotification(`🔔 Starting: ${task.title}`, { body: 'Your focus block is live!', tag: `start-${task.id}` });
-            update(task.id, { notifiedStart: true });
+          // Only transition once per task per browser session. The local task
+          // snapshot is stale right after the focus screen closes, so this
+          // guard stops the scheduler from re-opening the timer (or overwriting
+          // a freshly "completed" status) when TaskListView remounts.
+          if (!startedTaskIds.has(task.id)) {
+            startedTaskIds.add(task.id);
+            update(task.id, { status: 'in-progress' });
+            useFocusStore.getState().openFocus(task.id);
+            if (!task.notifiedStart) {
+              showNotification(`🔔 Starting: ${task.title}`, { body: 'Your focus block is live!', tag: `start-${task.id}` });
+              update(task.id, { notifiedStart: true });
+            }
           }
         } else {
           // Task already ended before the user opened the app — show the warning once.
@@ -50,15 +66,6 @@ export const useTaskScheduler = () => {
           }
         }
         return;
-      }
-
-      // Normal start transition (handles edge case where scheduler missed the first branch)
-      if (task.status === 'pending' && isPast(start) && isFuture(end)) {
-        update(task.id, { status: 'in-progress' });
-        if (!task.notifiedStart) {
-          showNotification(`🔔 Starting: ${task.title}`, { body: 'Time to work!', tag: `start-${task.id}` });
-          update(task.id, { notifiedStart: true });
-        }
       }
 
       // End warning: notify a few minutes before the task ends

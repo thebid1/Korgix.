@@ -1,6 +1,7 @@
 import { Task } from '../types';
 import { useTaskStore } from '../stores/taskStore';
-import { X, Check, Trash2, Clock, AlignLeft, Pencil } from 'lucide-react';
+import { useFocusStore } from '../stores/focusStore';
+import { X, Check, Trash2, Clock, AlignLeft, Pencil, Play } from 'lucide-react';
 import { formatTime, formatDate } from '../utils/time';
 
 interface TaskDetailProps {
@@ -10,7 +11,7 @@ interface TaskDetailProps {
 }
 
 export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
-  const { markComplete, deleteTask } = useTaskStore();
+  const { markComplete, deleteTask, updateTask } = useTaskStore();
 
   const statusColors = {
     pending: '#0a84ff',
@@ -110,6 +111,23 @@ export const TaskDetail = ({ task, onClose, onEdit }: TaskDetailProps) => {
               {task.description}
             </p>
           </div>
+        )}
+
+        {(task.status === 'pending' || task.status === 'in-progress') && (
+          <button
+            onClick={() => {
+              if (task.status === 'pending') {
+                updateTask(task.id, { status: 'in-progress' });
+              }
+              useFocusStore.getState().openFocus(task.id);
+              onClose();
+            }}
+            className="w-full py-3 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 mb-2"
+            style={{ background: 'var(--accent)', color: 'var(--inverse-text)' }}
+          >
+            <Play size={18} fill="currentColor" />
+            {task.status === 'pending' ? 'Start focus' : 'Open focus timer'}
+          </button>
         )}
 
         {/* Actions */}
